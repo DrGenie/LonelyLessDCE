@@ -29,11 +29,30 @@
         }
         .category-section {
             margin-top: 40px;
+            padding: 20px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            background-color: #f9f9f9;
         }
         .chart-container {
             width: 100%;
             height: 400px;
             margin-top: 20px;
+        }
+        .data-section {
+            margin-top: 20px;
+        }
+        .data-section h3 {
+            color: #2980b9;
+            margin-bottom: 10px;
+        }
+        .data-section p, .data-section li {
+            font-size: 1em;
+            color: #34495e;
+        }
+        .data-section ul {
+            list-style-type: disc;
+            margin-left: 25px;
         }
         button {
             padding: 10px 15px;
@@ -50,6 +69,15 @@
             background-color: #1e8449;
             transform: translateY(-2px);
         }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            background-color: #3498db;
+            color: #ffffff;
+            font-size: 1.1em;
+            border-radius: 0 0 12px 12px;
+        }
     </style>
 </head>
 <body>
@@ -59,33 +87,103 @@
         <!-- Not Lonely Section -->
         <div class="category-section" id="notLonelySection">
             <h2>Not Lonely</h2>
-            <canvas id="notLonelyChart"></canvas>
             <div class="chart-container">
-                <canvas id="notLonelyCBAChart"></canvas>
+                <canvas id="notLonelyChart" aria-label="Doughnut chart showing uptake probability for Not Lonely category" role="img"></canvas>
+            </div>
+            <div class="data-section">
+                <h3>Predicted Probability of Program Uptake:</h3>
+                <p id="notLonelyProbability">--</p>
+                <h3>Interpretation:</h3>
+                <p id="notLonelyInterpretation">--</p>
+                <h3>Your Selected Program Package:</h3>
+                <ul id="notLonelyPackageList">
+                    <!-- Selected attributes will be listed here -->
+                </ul>
+                <h3>Cost Analysis:</h3>
+                <ul id="NotLonelyCostList">
+                    <!-- Cost components will be listed here -->
+                </ul>
+                <p><strong>Total Estimated Cost:</strong> <span id="NotLonelyTotalCost">--</span> AUD</p>
+                <h3>Benefit Analysis:</h3>
+                <p><strong>Total Estimated Benefits:</strong> <span id="NotLonelyBenefits">--</span> AUD</p>
+                <h3>Cost-Benefit Analysis:</h3>
+                <p><strong>Net Benefit:</strong> <span id="NotLonelyNetBenefit">--</span> AUD</p>
+                <p><strong>Benefit-Cost Ratio:</strong> <span id="NotLonelyBCR">--</span></p>
+            </div>
+            <div class="chart-container">
+                <canvas id="notLonelyCBAChart" aria-label="Bar chart showing Cost-Benefit Analysis for Not Lonely category" role="img"></canvas>
             </div>
         </div>
 
         <!-- Moderately Lonely Section -->
         <div class="category-section" id="moderatelyLonelySection">
             <h2>Moderately Lonely</h2>
-            <canvas id="moderatelyLonelyChart"></canvas>
             <div class="chart-container">
-                <canvas id="moderatelyLonelyCBAChart"></canvas>
+                <canvas id="moderatelyLonelyChart" aria-label="Doughnut chart showing uptake probability for Moderately Lonely category" role="img"></canvas>
+            </div>
+            <div class="data-section">
+                <h3>Predicted Probability of Program Uptake:</h3>
+                <p id="moderatelyLonelyProbability">--</p>
+                <h3>Interpretation:</h3>
+                <p id="moderatelyLonelyInterpretation">--</p>
+                <h3>Your Selected Program Package:</h3>
+                <ul id="moderatelyLonelyPackageList">
+                    <!-- Selected attributes will be listed here -->
+                </ul>
+                <h3>Cost Analysis:</h3>
+                <ul id="ModeratelyLonelyCostList">
+                    <!-- Cost components will be listed here -->
+                </ul>
+                <p><strong>Total Estimated Cost:</strong> <span id="ModeratelyLonelyTotalCost">--</span> AUD</p>
+                <h3>Benefit Analysis:</h3>
+                <p><strong>Total Estimated Benefits:</strong> <span id="ModeratelyLonelyBenefits">--</span> AUD</p>
+                <h3>Cost-Benefit Analysis:</h3>
+                <p><strong>Net Benefit:</strong> <span id="ModeratelyLonelyNetBenefit">--</span> AUD</p>
+                <p><strong>Benefit-Cost Ratio:</strong> <span id="ModeratelyLonelyBCR">--</span></p>
+            </div>
+            <div class="chart-container">
+                <canvas id="moderatelyLonelyCBAChart" aria-label="Bar chart showing Cost-Benefit Analysis for Moderately Lonely category" role="img"></canvas>
             </div>
         </div>
 
         <!-- Severely Lonely Section -->
         <div class="category-section" id="severelyLonelySection">
             <h2>Severely Lonely</h2>
-            <canvas id="severelyLonelyChart"></canvas>
             <div class="chart-container">
-                <canvas id="severelyLonelyCBAChart"></canvas>
+                <canvas id="severelyLonelyChart" aria-label="Doughnut chart showing uptake probability for Severely Lonely category" role="img"></canvas>
+            </div>
+            <div class="data-section">
+                <h3>Predicted Probability of Program Uptake:</h3>
+                <p id="severelyLonelyProbability">--</p>
+                <h3>Interpretation:</h3>
+                <p id="severelyLonelyInterpretation">--</p>
+                <h3>Your Selected Program Package:</h3>
+                <ul id="severelyLonelyPackageList">
+                    <!-- Selected attributes will be listed here -->
+                </ul>
+                <h3>Cost Analysis:</h3>
+                <ul id="SeverelyLonelyCostList">
+                    <!-- Cost components will be listed here -->
+                </ul>
+                <p><strong>Total Estimated Cost:</strong> <span id="SeverelyLonelyTotalCost">--</span> AUD</p>
+                <h3>Benefit Analysis:</h3>
+                <p><strong>Total Estimated Benefits:</strong> <span id="SeverelyLonelyBenefits">--</span> AUD</p>
+                <h3>Cost-Benefit Analysis:</h3>
+                <p><strong>Net Benefit:</strong> <span id="SeverelyLonelyNetBenefit">--</span> AUD</p>
+                <p><strong>Benefit-Cost Ratio:</strong> <span id="SeverelyLonelyBCR">--</span></p>
+            </div>
+            <div class="chart-container">
+                <canvas id="severelyLonelyCBAChart" aria-label="Bar chart showing Cost-Benefit Analysis for Severely Lonely category" role="img"></canvas>
             </div>
         </div>
 
         <!-- Download All CBA Reports Button -->
-        <button onclick="downloadAllCBAs()">Download All CBA Reports as PDFs</button>
+        <button onclick="downloadAllCBAs()" aria-label="Download all Cost-Benefit Analysis reports as PDFs">Download All CBA Reports as PDFs</button>
     </div>
+
+    <footer>
+        <p>by Mesfin Genie, The University of Newcastle, Australia</p>
+    </footer>
 
     <script>
         // Model Coefficients by Loneliness Categories based on Table 5
@@ -288,6 +386,105 @@
         // Call the fetch function on page load
         fetchCostOfLivingData();
 
+        // Initialize Charts for Each Category
+        const charts = {};
+
+        function initializeCharts() {
+            for (let category in categories) {
+                // Uptake Probability Chart
+                const ctx = document.getElementById(`${category.replace(" ", "")}Chart`).getContext('2d');
+                charts[`${category}Chart`] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Uptake Probability', 'Remaining'],
+                        datasets: [{
+                            data: [0, 1],
+                            backgroundColor: ['rgba(39, 174, 96, 0.6)', 'rgba(236, 240, 241, 0.3)'],
+                            borderColor: ['rgba(39, 174, 96, 1)', 'rgba(236, 240, 241, 1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: {
+                                        size: 14
+                                    },
+                                    color: '#34495e'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: `Predicted Probability of Program Uptake - ${category}`,
+                                font: {
+                                    size: 18
+                                },
+                                color: '#2c3e50'
+                            }
+                        }
+                    }
+                });
+
+                // Cost-Benefit Analysis Chart
+                const cbaCtx = document.getElementById(`${category.replace(" ", "")}CBAChart`).getContext('2d');
+                charts[`${category}CBAChart`] = new Chart(cbaCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total Costs', 'Total Benefits'],
+                        datasets: [{
+                            label: 'Amount (AUD)',
+                            data: [0, 0],
+                            backgroundColor: [
+                                'rgba(231, 76, 60, 0.6)', // Red for Costs
+                                'rgba(39, 174, 96, 0.6)'   // Green for Benefits
+                            ],
+                            borderColor: [
+                                'rgba(231, 76, 60, 1)',
+                                'rgba(39, 174, 96, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: `Cost-Benefit Analysis - ${category}`,
+                                font: {
+                                    size: 18
+                                },
+                                color: '#2c3e50'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Call initializeCharts on window load
+        window.onload = function() {
+            if (!window.opener || window.opener.closed) {
+                alert("Unable to access data from the main window. Please open this page through the 'View Results by Loneliness Category' button.");
+                return;
+            }
+            initializeCharts();
+            displayAllCategories();
+        }
+
         // Function to calculate probability for a given category
         function calculateProbabilityCategory(category) {
             const coeff = categories[category];
@@ -335,7 +532,7 @@
                         coeff.dist_signif * dist_signif +
                         coeff.cost_cont * adjusted_cost_cont;
 
-            // Calculate U_optout (same for all categories)
+            // Calculate U_optout
             const U_optout = 0.131; // From Table 3
 
             // Calculate P_alt1 using the logistic function
@@ -413,6 +610,127 @@
             return benefit;
         }
 
+        // Function to display all categories
+        function displayAllCategories() {
+            for (let category in categories) {
+                const P_final = calculateProbabilityCategory(category);
+                const benefits = calculateBenefits(P_final);
+                const state = window.opener.document.getElementById('state_select').value;
+                const adjustCosts = window.opener.document.getElementById('adjust_costs').value;
+                const cost_cont = parseFloat(window.opener.document.getElementById('cost_cont').value);
+                const dist_signif = parseFloat(window.opener.document.getElementById('dist_signif').value);
+                const dist_local = parseFloat(window.opener.document.getElementById('dist_local').value);
+                const freq_monthly = parseFloat(window.opener.document.getElementById('freq_monthly').value);
+                const freq_weekly = parseFloat(window.opener.document.getElementById('freq_weekly').value);
+                const mode_virtual = parseFloat(window.opener.document.getElementById('mode_virtual').value);
+                const mode_hybrid = parseFloat(window.opener.document.getElementById('mode_hybrid').value);
+                const dur_2hrs = parseFloat(window.opener.document.getElementById('dur_2hrs').value);
+                const dur_4hrs = parseFloat(window.opener.document.getElementById('dur_4hrs').value);
+                const type_comm = parseFloat(window.opener.document.getElementById('type_comm').value);
+                const type_psych = parseFloat(window.opener.document.getElementById('type_psych').value);
+                const type_vr = parseFloat(window.opener.document.getElementById('type_vr').value);
+
+                // Calculate total cost
+                let adjusted_cost_cont = cost_cont;
+                if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
+                    adjusted_cost_cont = cost_cont * costOfLivingMultipliers[state];
+                }
+
+                const coeff = categories[category];
+                let totalCost = 0;
+                for (let key in coeff) {
+                    if (costData[key]) {
+                        totalCost += costData[key].personnel +
+                                     costData[key].materials +
+                                     costData[key].technology +
+                                     costData[key].facility +
+                                     costData[key].marketing +
+                                     costData[key].training +
+                                     costData[key].miscellaneous;
+                    }
+                }
+
+                // Apply cost-of-living multiplier
+                if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
+                    totalCost = totalCost * costOfLivingMultipliers[state];
+                }
+
+                displayCategoryData(category, P_final, benefits, totalCost);
+            }
+        }
+
+        // Function to display data for a specific category
+        function displayCategoryData(category, P_final, benefits, totalCost) {
+            // Update Probability
+            document.getElementById(`${category.replace(" ", "")}Probability`).innerText = (P_final * 100).toFixed(2) + '%';
+
+            // Update Interpretation
+            const interpretation = generateInterpretationsCategory(P_final, category);
+            document.getElementById(`${category.replace(" ", "")}Interpretation`).innerHTML = interpretation;
+
+            // Update Program Package
+            const packageList = generateProgramPackageCategory(category);
+            document.getElementById(`${category.replace(" ", "")}PackageList`).innerHTML = packageList;
+
+            // Update Cost Analysis
+            const costResults = calculateTotalCostCategory(category);
+            displayCosts(category, costResults);
+
+            // Update Benefits
+            displayBenefits(category, benefits);
+
+            // Display Cost-Benefit Analysis
+            displayCBA(category, costResults.grandTotal, benefits);
+
+            // Update Charts
+            updateCategoryCharts(category, P_final, benefits, costResults.grandTotal);
+        }
+
+        // Function to generate brief interpretations for categories
+        function generateInterpretationsCategory(probability, category) {
+            let interpretation = '';
+
+            if (probability < 0.3) {
+                interpretation = `<p><strong>${category}:</strong> Your selected support programs have a low probability of uptake (<30%). This suggests that the current configuration may not be attractive to older adults. Consider revising the program features to better meet the needs and preferences of your target population.</p>`;
+            } else if (probability >= 0.3 && probability < 0.7) {
+                interpretation = `<p><strong>${category}:</strong> Your selected support programs have a moderate probability of uptake (30%-70%). While there is potential interest, there is room for improvement. Enhancing certain program features could increase engagement and participation rates.</p>`;
+            } else {
+                interpretation = `<p><strong>${category}:</strong> Your selected support programs have a high probability of uptake (>70%). This indicates strong acceptance and interest from older adults. Maintaining and promoting these program features is recommended to maximize impact.</p>`;
+            }
+
+            return interpretation;
+        }
+
+        // Function to calculate total cost with state adjustment for a category
+        function calculateTotalCostCategory(category) {
+            const form = window.opener.document.getElementById('decisionForm');
+            const selects = form.getElementsByTagName('select');
+            let totalCost = 0;
+
+            for (let select of selects) {
+                if (select.id === 'state_select' || select.id === 'adjust_costs') {
+                    continue; // Skip state and adjust costs selections
+                }
+                if (select.value === "1") {
+                    const costs = costData[select.id];
+                    for (let key in costs) {
+                        totalCost += costs[key];
+                    }
+                }
+            }
+
+            // Fetch state and adjustCosts
+            const state = window.opener.document.getElementById('state_select').value;
+            const adjustCosts = window.opener.document.getElementById('adjust_costs').value;
+
+            // Apply cost-of-living multiplier if applicable
+            if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
+                totalCost = totalCost * costOfLivingMultipliers[state];
+            }
+
+            return { totalCost, grandTotal: totalCost };
+        }
+
         // Function to display cost information
         function displayCosts(category, costResults) {
             const { totalCost, grandTotal } = costResults;
@@ -423,7 +741,6 @@
             costList.innerHTML = '';
             
             // Populate Cost Components
-            // Reconstruct the selected attributes for this category
             const selectedAttributes = getSelectedAttributesCategory(category);
             selectedAttributes.forEach(attr => {
                 if (costData[attr]) {
@@ -464,91 +781,6 @@
             return string.charAt(0).toUpperCase() + string.slice(1);
         }
 
-        // Function to display charts for a given category
-        function displayCharts(category, P_final, benefits, totalCost) {
-            // Uptake Probability Chart
-            const ctx = document.getElementById(`${category.replace(" ", "")}Chart`).getContext('2d');
-            const uptakeChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Uptake Probability', 'Remaining'],
-                    datasets: [{
-                        data: [P_final, 1 - P_final],
-                        backgroundColor: ['rgba(39, 174, 96, 0.6)', 'rgba(236, 240, 241, 0.3)'],
-                        borderColor: ['rgba(39, 174, 96, 1)', 'rgba(236, 240, 241, 1)'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: {
-                                    size: 14
-                                },
-                                color: '#34495e'
-                            }
-                        },
-                        title: {
-                            display: true,
-                            text: `Predicted Probability of Program Uptake - ${category}`,
-                            font: {
-                                size: 18
-                            },
-                            color: '#2c3e50'
-                        }
-                    }
-                }
-            });
-
-            // Cost-Benefit Analysis Chart
-            const cbaCtx = document.getElementById(`${category.replace(" ", "")}CBAChart`).getContext('2d');
-            const cbaChartCategory = new Chart(cbaCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Total Costs', 'Total Benefits'],
-                    datasets: [{
-                        label: 'Amount (AUD)',
-                        data: [totalCost, benefits],
-                        backgroundColor: [
-                            'rgba(231, 76, 60, 0.6)', // Red for Costs
-                            'rgba(39, 174, 96, 0.6)'   // Green for Benefits
-                        ],
-                        borderColor: [
-                            'rgba(231, 76, 60, 1)',
-                            'rgba(39, 174, 96, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        title: {
-                            display: true,
-                            text: `Cost-Benefit Analysis - ${category}`,
-                            font: {
-                                size: 18
-                            },
-                            color: '#2c3e50'
-                        }
-                    }
-                }
-            });
-        }
-
         // Function to get selected attributes for a category (from main window)
         function getSelectedAttributesCategory(category) {
             const form = window.opener.document.getElementById('decisionForm');
@@ -563,6 +795,28 @@
                 }
             }
             return attributes;
+        }
+
+        // Function to update charts for a specific category
+        function updateCategoryCharts(category, P_final, benefits, totalCost) {
+            // Uptake Probability Chart
+            charts[`${category}Chart`].data.datasets[0].data = [P_final, 1 - P_final];
+            // Update the Uptake Probability chart color based on probability
+            if (P_final < 0.3) {
+                charts[`${category}Chart`].data.datasets[0].backgroundColor = ['rgba(231, 76, 60, 0.6)', 'rgba(236, 240, 241, 0.3)']; // Red and Light Gray
+                charts[`${category}Chart`].data.datasets[0].borderColor = ['rgba(231, 76, 60, 1)', 'rgba(236, 240, 241, 1)'];
+            } else if (P_final >= 0.3 && P_final < 0.7) {
+                charts[`${category}Chart`].data.datasets[0].backgroundColor = ['rgba(241, 196, 15, 0.6)', 'rgba(236, 240, 241, 0.3)']; // Yellow and Light Gray
+                charts[`${category}Chart`].data.datasets[0].borderColor = ['rgba(241, 196, 15, 1)', 'rgba(236, 240, 241, 1)'];
+            } else {
+                charts[`${category}Chart`].data.datasets[0].backgroundColor = ['rgba(39, 174, 96, 0.6)', 'rgba(236, 240, 241, 0.3)']; // Green and Light Gray
+                charts[`${category}Chart`].data.datasets[0].borderColor = ['rgba(39, 174, 96, 1)', 'rgba(236, 240, 241, 1)'];
+            }
+            charts[`${category}Chart`].update();
+
+            // Cost-Benefit Analysis Chart
+            charts[`${category}CBAChart`].data.datasets[0].data = [totalCost, benefits];
+            charts[`${category}CBAChart`].update();
         }
 
         // Function to download all CBA reports as PDFs
@@ -609,6 +863,11 @@
                     }
                 }
 
+                // Apply cost-of-living multiplier
+                if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
+                    totalCost = totalCost * costOfLivingMultipliers[state];
+                }
+
                 const netBenefit = benefits - totalCost;
                 const bcr = benefits / totalCost;
 
@@ -639,11 +898,6 @@
             doc.save('All_CBA_Reports.pdf');
 
             alert("All Cost-Benefit Analysis reports downloaded successfully!");
-        }
-
-        // Execute displayAllCharts after window loads
-        window.onload = function() {
-            displayAllCharts();
         }
     </script>
 </body>
