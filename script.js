@@ -369,14 +369,26 @@ function calculateProbability() {
     displayCosts(costResults);
 
     // Calculate and Display Benefits
-    const benefits = calculateBenefits(P_final);
-    displayBenefits(benefits);
+    const benefitsValue = calculateBenefits(P_final);
+    displayBenefits(benefitsValue);
 
     // Display Cost-Benefit Analysis
-    displayCBA(costResults.grandTotal, benefits);
+    displayCBA(costResults.grandTotal, benefitsValue);
 
     // Update CBA Chart
-    updateCBACChart(costResults.grandTotal, benefits);
+    updateCBACChart(costResults.grandTotal, benefitsValue);
+
+    // Send Data to Category Results Window
+    sendDataToCategoryResults({
+        probability: (P_final * 100).toFixed(2) + '%',
+        interpretation: generateInterpretations(P_final),
+        packageList: packageList.innerHTML,
+        costList: costListHTML(costResults.totalCost),
+        totalCost: costResults.grandTotal.toLocaleString(),
+        benefits: benefitsValue.toLocaleString(),
+        netBenefit: (benefitsValue - costResults.grandTotal).toLocaleString(),
+        bcr: (benefitsValue / costResults.grandTotal).toFixed(2)
+    });
 }
 
 // Function to generate brief interpretations based on probability
@@ -414,6 +426,22 @@ function generateProgramPackage() {
     let listItems = '';
     packageList.forEach(item => {
         listItems += `<li>${item}</li>`;
+    });
+    return listItems;
+}
+
+// Function to generate cost list HTML
+function costListHTML(totalCost) {
+    // Since costList is a nested object, we'll need to iterate through it
+    const selectedAttributes = getSelectedAttributes();
+    let listItems = '';
+    selectedAttributes.forEach(attr => {
+        const costs = costData[attr];
+        for (let key in costs) {
+            if (costs[key] > 0) {
+                listItems += `<li>${capitalizeFirstLetter(key)}: \$${costs[key].toLocaleString()}</li>`;
+            }
+        }
     });
     return listItems;
 }
@@ -653,10 +681,11 @@ function updateCBACChart(totalCost, benefits) {
 
 // Function to view results by loneliness category
 function viewByLonelinessCategory() {
-    // Open a new window
+    // Open a new window and store the reference
     const categoryWindow = window.open("categoryResults.html", "LonelinessCategoryResults", "width=1200,height=800");
     if (!categoryWindow) {
         alert("Failed to open the results window. Please allow pop-ups for this website.");
+        return;
     }
 }
 
@@ -673,3 +702,15 @@ document.getElementById('feedbackForm').addEventListener('submit', function(even
         alert("Please enter your feedback before submitting.");
     }
 });
+
+// Function to send data to categoryResults.html via postMessage
+function sendDataToCategoryResults(data) {
+    const categoryWindow = window.open("categoryResults.html", "LonelinessCategoryResults", "width=1200,height=800");
+    if (categoryWindow) {
+        categoryWindow.addEventListener('load', function() {
+            categoryWindow.postMessage(data, '*'); // In production, replace '*' with the specific origin
+        }, { once: true });
+    } else {
+        alert("Failed to open the results window. Please allow pop-ups for this website.");
+    }
+}
