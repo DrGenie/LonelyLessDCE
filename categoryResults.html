@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Results by Loneliness Category</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF CDN for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
+        /* Additional styles specific to categoryResults.html */
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f0f4f8;
@@ -186,6 +189,8 @@
     </footer>
 
     <script>
+        /* categoryResults.html Script */
+
         // Model Coefficients by Loneliness Categories based on Table 5
         const categories = {
             "Not Lonely": {
@@ -384,9 +389,13 @@
         }
 
         // Call the fetch function on page load
-        fetchCostOfLivingData();
+        window.onload = function() {
+            fetchCostOfLivingData().then(() => {
+                displayAllCategories();
+            });
+        };
 
-        // Initialize Charts for Each Category
+        // Initialize Chart.js with Doughnut Chart for Uptake Probability for each category
         const charts = {};
 
         function initializeCharts() {
@@ -475,14 +484,17 @@
             }
         }
 
-        // Call initializeCharts on window load
-        window.onload = function() {
-            if (!window.opener || window.opener.closed) {
-                alert("Unable to access data from the main window. Please open this page through the 'View Results by Loneliness Category' button.");
-                return;
-            }
+        // Function to display all categories
+        function displayAllCategories() {
             initializeCharts();
-            displayAllCategories();
+
+            for (let category in categories) {
+                const P_final = calculateProbabilityCategory(category);
+                const benefits = calculateBenefits(P_final);
+                const costResults = calculateTotalCostCategory();
+
+                displayCategoryData(category, P_final, benefits, costResults.grandTotal);
+            }
         }
 
         // Function to calculate probability for a given category
@@ -490,34 +502,56 @@
             const coeff = categories[category];
 
             // Fetch selections from the main window
-            const state = window.opener.document.getElementById('state_select').value;
-            const adjustCosts = window.opener.document.getElementById('adjust_costs').value;
-            const cost_cont = parseFloat(window.opener.document.getElementById('cost_cont').value);
-            const dist_signif = parseFloat(window.opener.document.getElementById('dist_signif').value);
-            const dist_local = parseFloat(window.opener.document.getElementById('dist_local').value);
-            const freq_monthly = parseFloat(window.opener.document.getElementById('freq_monthly').value);
-            const freq_weekly = parseFloat(window.opener.document.getElementById('freq_weekly').value);
-            const mode_virtual = parseFloat(window.opener.document.getElementById('mode_virtual').value);
-            const mode_hybrid = parseFloat(window.opener.document.getElementById('mode_hybrid').value);
-            const dur_2hrs = parseFloat(window.opener.document.getElementById('dur_2hrs').value);
-            const dur_4hrs = parseFloat(window.opener.document.getElementById('dur_4hrs').value);
-            const type_comm = parseFloat(window.opener.document.getElementById('type_comm').value);
-            const type_psych = parseFloat(window.opener.document.getElementById('type_psych').value);
-            const type_vr = parseFloat(window.opener.document.getElementById('type_vr').value);
-
-            // Validate that if 'Adjust Costs for Living Expenses' is 'Yes', a state is selected
-            if (adjustCosts === 'yes' && !state) {
-                alert("Please select a state if you choose to adjust costs for living expenses.");
-                return "--";
+            const mainWindow = window.opener;
+            if (!mainWindow || mainWindow.closed) {
+                alert("Unable to access data from the main window. Please open this page through the 'View Results by Loneliness Category' button.");
+                return 0;
             }
 
-            // Calculate U_alt1 with Cost-of-Living Adjustment
-            let adjusted_cost_cont = cost_cont; // Initialize adjusted cost_cont
+            // Retrieve form values
+            const state = mainWindow.document.getElementById('state_select').value;
+            const adjustCosts = mainWindow.document.getElementById('adjust_costs').value;
+            const cost_cont = parseFloat(mainWindow.document.getElementById('cost_cont').value);
+            const dist_signif = parseFloat(mainWindow.document.getElementById('dist_signif').value);
+            const dist_local = parseFloat(mainWindow.document.getElementById('dist_local').value);
+            const freq_monthly = parseFloat(mainWindow.document.getElementById('freq_monthly').value);
+            const freq_weekly = parseFloat(mainWindow.document.getElementById('freq_weekly').value);
+            const mode_virtual = parseFloat(mainWindow.document.getElementById('mode_virtual').value);
+            const mode_hybrid = parseFloat(mainWindow.document.getElementById('mode_hybrid').value);
+            const dur_2hrs = parseFloat(mainWindow.document.getElementById('dur_2hrs').value);
+            const dur_4hrs = parseFloat(mainWindow.document.getElementById('dur_4hrs').value);
+            const type_comm = parseFloat(mainWindow.document.getElementById('type_comm').value);
+            const type_psych = parseFloat(mainWindow.document.getElementById('type_psych').value);
+            const type_vr = parseFloat(mainWindow.document.getElementById('type_vr').value);
 
+            // Validate selections
+            if (dur_2hrs === 1 && dur_4hrs === 1) {
+                alert("Please select only one duration: either 2 Hours or 4 Hours.");
+                return 0;
+            }
+
+            if (freq_monthly === 1 && freq_weekly === 1) {
+                alert("Please select only one frequency: either Monthly or Weekly.");
+                return 0;
+            }
+
+            if (dist_local === 1 && dist_signif === 1) {
+                alert("Please select only one accessibility option: either Local Area Accessibility or Low Accessibility.");
+                return 0;
+            }
+
+            if (adjustCosts === 'yes' && !state) {
+                alert("Please select a state if you choose to adjust costs for living expenses.");
+                return 0;
+            }
+
+            // Apply Cost-of-Living Adjustment
+            let adjusted_cost_cont = cost_cont;
             if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
                 adjusted_cost_cont = cost_cont * costOfLivingMultipliers[state];
             }
 
+            // Calculate Utility (U_alt1)
             let U_alt1 = coeff.ASC_alt1 +
                         coeff.type_comm * type_comm +
                         coeff.type_psych * type_psych +
@@ -532,7 +566,7 @@
                         coeff.dist_signif * dist_signif +
                         coeff.cost_cont * adjusted_cost_cont;
 
-            // Calculate U_optout
+            // Calculate U_optout (assuming ASC_optout is same across categories)
             const U_optout = 0.131; // From Table 3
 
             // Calculate P_alt1 using the logistic function
@@ -547,9 +581,14 @@
         }
 
         // Function to generate program package list with user-friendly labels for a given category
-        function generateProgramPackageCategory(category) {
-            const coeff = categories[category];
-            const form = window.opener.document.getElementById('decisionForm');
+        function generateProgramPackageCategory() {
+            const mainWindow = window.opener;
+            if (!mainWindow || mainWindow.closed) {
+                alert("Unable to access data from the main window. Please open this page through the 'View Results by Loneliness Category' button.");
+                return "";
+            }
+
+            const form = mainWindow.document.getElementById('decisionForm');
             const selects = form.getElementsByTagName('select');
             const selectedAttributes = [];
 
@@ -573,10 +612,15 @@
             return listItems;
         }
 
-        // Function to calculate total cost with state adjustment for a category
-        function calculateTotalCostCategory(category) {
-            const coeff = categories[category];
-            const form = window.opener.document.getElementById('decisionForm');
+        // Function to calculate total cost with state adjustment
+        function calculateTotalCostCategory() {
+            const mainWindow = window.opener;
+            if (!mainWindow || mainWindow.closed) {
+                alert("Unable to access data from the main window. Please open this page through the 'View Results by Loneliness Category' button.");
+                return { totalCost: 0, grandTotal: 0 };
+            }
+
+            const form = mainWindow.document.getElementById('decisionForm');
             const selects = form.getElementsByTagName('select');
             let totalCost = 0;
 
@@ -593,8 +637,8 @@
             }
 
             // Fetch state and adjustCosts
-            const state = window.opener.document.getElementById('state_select').value;
-            const adjustCosts = window.opener.document.getElementById('adjust_costs').value;
+            const state = mainWindow.document.getElementById('state_select').value;
+            const adjustCosts = mainWindow.document.getElementById('adjust_costs').value;
 
             // Apply cost-of-living multiplier if applicable
             if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
@@ -610,55 +654,6 @@
             return benefit;
         }
 
-        // Function to display all categories
-        function displayAllCategories() {
-            for (let category in categories) {
-                const P_final = calculateProbabilityCategory(category);
-                const benefits = calculateBenefits(P_final);
-                const state = window.opener.document.getElementById('state_select').value;
-                const adjustCosts = window.opener.document.getElementById('adjust_costs').value;
-                const cost_cont = parseFloat(window.opener.document.getElementById('cost_cont').value);
-                const dist_signif = parseFloat(window.opener.document.getElementById('dist_signif').value);
-                const dist_local = parseFloat(window.opener.document.getElementById('dist_local').value);
-                const freq_monthly = parseFloat(window.opener.document.getElementById('freq_monthly').value);
-                const freq_weekly = parseFloat(window.opener.document.getElementById('freq_weekly').value);
-                const mode_virtual = parseFloat(window.opener.document.getElementById('mode_virtual').value);
-                const mode_hybrid = parseFloat(window.opener.document.getElementById('mode_hybrid').value);
-                const dur_2hrs = parseFloat(window.opener.document.getElementById('dur_2hrs').value);
-                const dur_4hrs = parseFloat(window.opener.document.getElementById('dur_4hrs').value);
-                const type_comm = parseFloat(window.opener.document.getElementById('type_comm').value);
-                const type_psych = parseFloat(window.opener.document.getElementById('type_psych').value);
-                const type_vr = parseFloat(window.opener.document.getElementById('type_vr').value);
-
-                // Calculate total cost
-                let adjusted_cost_cont = cost_cont;
-                if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
-                    adjusted_cost_cont = cost_cont * costOfLivingMultipliers[state];
-                }
-
-                const coeff = categories[category];
-                let totalCost = 0;
-                for (let key in coeff) {
-                    if (costData[key]) {
-                        totalCost += costData[key].personnel +
-                                     costData[key].materials +
-                                     costData[key].technology +
-                                     costData[key].facility +
-                                     costData[key].marketing +
-                                     costData[key].training +
-                                     costData[key].miscellaneous;
-                    }
-                }
-
-                // Apply cost-of-living multiplier
-                if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
-                    totalCost = totalCost * costOfLivingMultipliers[state];
-                }
-
-                displayCategoryData(category, P_final, benefits, totalCost);
-            }
-        }
-
         // Function to display data for a specific category
         function displayCategoryData(category, P_final, benefits, totalCost) {
             // Update Probability
@@ -669,21 +664,30 @@
             document.getElementById(`${category.replace(" ", "")}Interpretation`).innerHTML = interpretation;
 
             // Update Program Package
-            const packageList = generateProgramPackageCategory(category);
+            const packageList = generateProgramPackageCategory();
             document.getElementById(`${category.replace(" ", "")}PackageList`).innerHTML = packageList;
 
             // Update Cost Analysis
-            const costResults = calculateTotalCostCategory(category);
-            displayCosts(category, costResults);
+            const costList = document.getElementById(`${category.replace(" ", "")}CostList`);
+            costList.innerHTML = generateCostList();
+
+            // Update Total Cost
+            document.getElementById(`${category.replace(" ", "")}TotalCost`).innerText = totalCost.toLocaleString();
 
             // Update Benefits
-            displayBenefits(category, benefits);
+            document.getElementById(`${category.replace(" ", "")}Benefits`).innerText = benefits.toLocaleString();
 
-            // Display Cost-Benefit Analysis
-            displayCBA(category, costResults.grandTotal, benefits);
+            // Update Cost-Benefit Analysis
+            const netBenefit = benefits - totalCost;
+            const bcr = benefits / totalCost;
+            document.getElementById(`${category.replace(" ", "")}NetBenefit`).innerText = netBenefit.toLocaleString();
+            document.getElementById(`${category.replace(" ", "")}BCR`).innerText = bcr.toFixed(2);
 
-            // Update Charts
-            updateCategoryCharts(category, P_final, benefits, costResults.grandTotal);
+            // Update Uptake Probability Chart
+            updateUptakeChart(category, P_final);
+
+            // Update CBA Chart
+            updateCBAChart(category, totalCost, benefits);
         }
 
         // Function to generate brief interpretations for categories
@@ -701,79 +705,38 @@
             return interpretation;
         }
 
-        // Function to calculate total cost with state adjustment for a category
-        function calculateTotalCostCategory(category) {
-            const form = window.opener.document.getElementById('decisionForm');
+        // Function to generate cost list HTML
+        function generateCostList() {
+            const mainWindow = window.opener;
+            if (!mainWindow || mainWindow.closed) {
+                alert("Unable to access data from the main window.");
+                return "";
+            }
+
+            const form = mainWindow.document.getElementById('decisionForm');
             const selects = form.getElementsByTagName('select');
-            let totalCost = 0;
+            const selectedAttributes = [];
 
             for (let select of selects) {
                 if (select.id === 'state_select' || select.id === 'adjust_costs') {
                     continue; // Skip state and adjust costs selections
                 }
                 if (select.value === "1") {
-                    const costs = costData[select.id];
-                    for (let key in costs) {
-                        totalCost += costs[key];
-                    }
+                    selectedAttributes.push(select.id);
                 }
             }
 
-            // Fetch state and adjustCosts
-            const state = window.opener.document.getElementById('state_select').value;
-            const adjustCosts = window.opener.document.getElementById('adjust_costs').value;
-
-            // Apply cost-of-living multiplier if applicable
-            if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
-                totalCost = totalCost * costOfLivingMultipliers[state];
-            }
-
-            return { totalCost, grandTotal: totalCost };
-        }
-
-        // Function to display cost information
-        function displayCosts(category, costResults) {
-            const { totalCost, grandTotal } = costResults;
-            const costList = document.getElementById(`${category}CostList`);
-            const totalCostDisplay = document.getElementById(`${category}TotalCost`);
-            
-            // Clear Previous Costs
-            costList.innerHTML = '';
-            
-            // Populate Cost Components
-            const selectedAttributes = getSelectedAttributesCategory(category);
+            let listItems = '';
             selectedAttributes.forEach(attr => {
-                if (costData[attr]) {
-                    for (let key in costData[attr]) {
-                        if (costData[attr][key] > 0) {
-                            const listItem = document.createElement('li');
-                            listItem.innerText = `${capitalizeFirstLetter(key)}: \$${costData[attr][key].toLocaleString()}`;
-                            costList.appendChild(listItem);
-                        }
+                const costs = costData[attr];
+                for (let key in costs) {
+                    if (costs[key] > 0) {
+                        listItems += `<li>${capitalizeFirstLetter(key)}: \$${costs[key].toLocaleString()}</li>`;
                     }
                 }
             });
 
-            // Display Grand Total
-            totalCostDisplay.innerText = grandTotal.toLocaleString();
-        }
-
-        // Function to display benefits
-        function displayBenefits(category, benefits) {
-            const benefitsDisplay = document.getElementById(`${category}Benefits`);
-            benefitsDisplay.innerText = benefits.toLocaleString();
-        }
-
-        // Function to display Cost-Benefit Analysis
-        function displayCBA(category, totalCost, benefits) {
-            const netBenefitDisplay = document.getElementById(`${category}NetBenefit`);
-            const bcrDisplay = document.getElementById(`${category}BCR`);
-
-            const netBenefit = benefits - totalCost;
-            const bcr = benefits / totalCost;
-
-            netBenefitDisplay.innerText = netBenefit.toLocaleString();
-            bcrDisplay.innerText = bcr.toFixed(2);
+            return listItems;
         }
 
         // Function to capitalize first letter
@@ -781,25 +744,8 @@
             return string.charAt(0).toUpperCase() + string.slice(1);
         }
 
-        // Function to get selected attributes for a category (from main window)
-        function getSelectedAttributesCategory(category) {
-            const form = window.opener.document.getElementById('decisionForm');
-            const selects = form.getElementsByTagName('select');
-            const attributes = [];
-            for (let select of selects) {
-                if (select.id === 'state_select' || select.id === 'adjust_costs') {
-                    continue; // Skip state and adjust costs selections
-                }
-                if (select.value === "1") {
-                    attributes.push(select.id);
-                }
-            }
-            return attributes;
-        }
-
-        // Function to update charts for a specific category
-        function updateCategoryCharts(category, P_final, benefits, totalCost) {
-            // Uptake Probability Chart
+        // Function to update Uptake Probability Chart
+        function updateUptakeChart(category, P_final) {
             charts[`${category}Chart`].data.datasets[0].data = [P_final, 1 - P_final];
             // Update the Uptake Probability chart color based on probability
             if (P_final < 0.3) {
@@ -813,14 +759,16 @@
                 charts[`${category}Chart`].data.datasets[0].borderColor = ['rgba(39, 174, 96, 1)', 'rgba(236, 240, 241, 1)'];
             }
             charts[`${category}Chart`].update();
+        }
 
-            // Cost-Benefit Analysis Chart
+        // Function to update Cost-Benefit Analysis Chart
+        function updateCBAChart(category, totalCost, benefits) {
             charts[`${category}CBAChart`].data.datasets[0].data = [totalCost, benefits];
             charts[`${category}CBAChart`].update();
         }
 
         // Function to download all CBA reports as PDFs
-        function downloadAllCBAs() {
+        async function downloadAllCBAs() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             let yPosition = 10;
@@ -828,46 +776,8 @@
             for (let category in categories) {
                 const P_final = calculateProbabilityCategory(category);
                 const benefits = calculateBenefits(P_final);
-                const state = window.opener.document.getElementById('state_select').value;
-                const adjustCosts = window.opener.document.getElementById('adjust_costs').value;
-                const cost_cont = parseFloat(window.opener.document.getElementById('cost_cont').value);
-                const dist_signif = parseFloat(window.opener.document.getElementById('dist_signif').value);
-                const dist_local = parseFloat(window.opener.document.getElementById('dist_local').value);
-                const freq_monthly = parseFloat(window.opener.document.getElementById('freq_monthly').value);
-                const freq_weekly = parseFloat(window.opener.document.getElementById('freq_weekly').value);
-                const mode_virtual = parseFloat(window.opener.document.getElementById('mode_virtual').value);
-                const mode_hybrid = parseFloat(window.opener.document.getElementById('mode_hybrid').value);
-                const dur_2hrs = parseFloat(window.opener.document.getElementById('dur_2hrs').value);
-                const dur_4hrs = parseFloat(window.opener.document.getElementById('dur_4hrs').value);
-                const type_comm = parseFloat(window.opener.document.getElementById('type_comm').value);
-                const type_psych = parseFloat(window.opener.document.getElementById('type_psych').value);
-                const type_vr = parseFloat(window.opener.document.getElementById('type_vr').value);
-
-                // Calculate total cost
-                let adjusted_cost_cont = cost_cont;
-                if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
-                    adjusted_cost_cont = cost_cont * costOfLivingMultipliers[state];
-                }
-
-                const coeff = categories[category];
-                let totalCost = 0;
-                for (let key in coeff) {
-                    if (costData[key]) {
-                        totalCost += costData[key].personnel +
-                                     costData[key].materials +
-                                     costData[key].technology +
-                                     costData[key].facility +
-                                     costData[key].marketing +
-                                     costData[key].training +
-                                     costData[key].miscellaneous;
-                    }
-                }
-
-                // Apply cost-of-living multiplier
-                if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
-                    totalCost = totalCost * costOfLivingMultipliers[state];
-                }
-
+                const costResults = calculateTotalCostCategory();
+                const totalCost = costResults.grandTotal;
                 const netBenefit = benefits - totalCost;
                 const bcr = benefits / totalCost;
 
@@ -875,10 +785,6 @@
                 doc.text(`Cost-Benefit Analysis Report - ${category}`, 10, yPosition);
                 yPosition += 10;
                 doc.setFontSize(12);
-                doc.text(`Selected State: ${state ? state : 'N/A'}`, 10, yPosition);
-                yPosition += 10;
-                doc.text(`Adjust Costs for Living Expenses: ${adjustCosts === 'yes' ? 'Yes' : 'No'}`, 10, yPosition);
-                yPosition += 10;
                 doc.text(`Total Estimated Cost: $${totalCost.toLocaleString()} AUD`, 10, yPosition);
                 yPosition += 10;
                 doc.text(`Total Estimated Benefits: $${benefits.toLocaleString()} AUD`, 10, yPosition);
@@ -886,7 +792,6 @@
                 doc.text(`Net Benefit: $${netBenefit.toLocaleString()} AUD`, 10, yPosition);
                 yPosition += 10;
                 doc.text(`Benefit-Cost Ratio: ${bcr.toFixed(2)}`, 10, yPosition);
-                
                 yPosition += 20;
 
                 if (yPosition > 270) {
