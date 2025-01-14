@@ -282,30 +282,6 @@
             });
         }
 
-        // Listen for postMessage events
-        window.addEventListener('message', function(event) {
-            // In production, verify the origin
-            // if (event.origin !== "http://yourdomain.com") return;
-
-            const data = event.data;
-            if (typeof data !== 'object') return;
-
-            // Assuming data has properties for each category
-            // Example structure:
-            // {
-            //     NotLonely: { probability, interpretation, packageList, costList, totalCost, benefits, netBenefit, bcr },
-            //     ModeratelyLonely: { ... },
-            //     SeverelyLonely: { ... }
-            // }
-
-            for (let category in data) {
-                if (!data.hasOwnProperty(category)) continue;
-
-                const categoryData = data[category];
-                populateCategoryData(category, categoryData);
-            }
-        });
-
         // Function to populate data for a specific category
         function populateCategoryData(category, data) {
             // Update Probability
@@ -358,18 +334,18 @@
             const doc = new jsPDF();
             let yPosition = 10;
 
-            const categories = ["NotLonely", "ModeratelyLonely", "SeverelyLonely"];
+            const categories = ["Not Lonely", "Moderately Lonely", "Severely Lonely"];
 
             categories.forEach((category, index) => {
                 // Get data from the page
-                const probability = document.getElementById(`${category}Probability`).innerText;
-                const totalCost = document.getElementById(`${category}TotalCost`).innerText;
-                const benefits = document.getElementById(`${category}Benefits`).innerText;
-                const netBenefit = document.getElementById(`${category}NetBenefit`).innerText;
-                const bcr = document.getElementById(`${category}BCR`).innerText;
+                const probability = document.getElementById(`${category.replace(" ", "")}Probability`).innerText;
+                const totalCost = document.getElementById(`${category.replace(" ", "")}TotalCost`).innerText;
+                const benefits = document.getElementById(`${category.replace(" ", "")}Benefits`).innerText;
+                const netBenefit = document.getElementById(`${category.replace(" ", "")}NetBenefit`).innerText;
+                const bcr = document.getElementById(`${category.replace(" ", "")}BCR`).innerText;
 
                 doc.setFontSize(16);
-                doc.text(`Cost-Benefit Analysis Report - ${category.replace(/([A-Z])/g, ' $1').trim()}`, 10, yPosition);
+                doc.text(`Cost-Benefit Analysis Report - ${category}`, 10, yPosition);
                 yPosition += 10;
                 doc.setFontSize(12);
                 doc.text(`Total Estimated Cost: $${totalCost} AUD`, 10, yPosition);
@@ -391,6 +367,30 @@
             doc.save('All_CBA_Reports.pdf');
 
             alert("All Cost-Benefit Analysis reports downloaded successfully!");
+        }
+
+        // On page load
+        window.onload = function() {
+            initializeCharts();
+
+            // Retrieve data from localStorage
+            const storedData = localStorage.getItem('lonelyLessResults');
+            if (!storedData) {
+                alert("No results available to display.");
+                return;
+            }
+
+            const categoriesData = JSON.parse(storedData);
+
+            // Populate data for each category
+            for (let category in categoriesData) {
+                if (categoriesData.hasOwnProperty(category)) {
+                    populateCategoryData(category, categoriesData[category]);
+                }
+            }
+
+            // Clear the stored data to prevent duplicate displays
+            localStorage.removeItem('lonelyLessResults');
         }
     </script>
 </body>
