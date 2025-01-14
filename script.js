@@ -336,8 +336,8 @@ function initializeCategoryCharts() {
 
     categories.forEach(category => {
         // Uptake Probability Chart
-        const ctx = document.getElementById(`${category}ProbabilityChart`).getContext('2d');
-        categoryCharts[`${category}ProbabilityChart`] = new Chart(ctx, {
+        const ctxProb = document.getElementById(`${category}ProbabilityChart`).getContext('2d');
+        categoryCharts[`${category}ProbabilityChart`] = new Chart(ctxProb, {
             type: 'doughnut',
             data: {
                 labels: ['Uptake Probability', 'Remaining'],
@@ -363,7 +363,7 @@ function initializeCategoryCharts() {
                     },
                     title: {
                         display: true,
-                        text: `Predicted Probability of Uptake - ${category.replace(/([A-Z])/g, ' $1').trim()}`,
+                        text: `Predicted Probability of Uptake - ${formatCategoryName(category)}`,
                         font: {
                             size: 18
                         },
@@ -374,8 +374,8 @@ function initializeCategoryCharts() {
         });
 
         // Cost-Benefit Analysis Chart
-        const cbaCtx = document.getElementById(`${category}CBAChart`).getContext('2d');
-        categoryCharts[`${category}CBAChart`] = new Chart(cbaCtx, {
+        const ctxCBA = document.getElementById(`${category}CBAChart`).getContext('2d');
+        categoryCharts[`${category}CBAChart`] = new Chart(ctxCBA, {
             type: 'bar',
             data: {
                 labels: ['Total Costs', 'Total Benefits'],
@@ -407,7 +407,7 @@ function initializeCategoryCharts() {
                     },
                     title: {
                         display: true,
-                        text: `Cost-Benefit Analysis - ${category.replace(/([A-Z])/g, ' $1').trim()}`,
+                        text: `Cost-Benefit Analysis - ${formatCategoryName(category)}`,
                         font: {
                             size: 18
                         },
@@ -418,8 +418,8 @@ function initializeCategoryCharts() {
         });
 
         // WTP Chart
-        const wtpCtx = document.getElementById(`${category}WTPChart`).getContext('2d');
-        categoryCharts[`${category}WTPChart`] = new Chart(wtpCtx, {
+        const ctxWTP = document.getElementById(`${category}WTPChart`).getContext('2d');
+        categoryCharts[`${category}WTPChart`] = new Chart(ctxWTP, {
             type: 'bar',
             data: {
                 labels: ['Willingness To Pay (AUD)'],
@@ -445,7 +445,7 @@ function initializeCategoryCharts() {
                     },
                     title: {
                         display: true,
-                        text: `Willingness To Pay (WTP) - ${category.replace(/([A-Z])/g, ' $1').trim()}`,
+                        text: `Willingness To Pay (WTP) - ${formatCategoryName(category)}`,
                         font: {
                             size: 18
                         },
@@ -476,6 +476,12 @@ function openTab(evt, tabName) {
 
     document.getElementById(tabName).classList.add("active");
     evt.currentTarget.classList.add("active");
+}
+
+// Helper Function to Format Category Names
+function formatCategoryName(category) {
+    // Convert 'NotLonely' to 'Not Lonely', etc.
+    return category.replace(/([A-Z])/g, ' $1').trim();
 }
 
 // Function to calculate predicted probability and update the charts and tables
@@ -605,10 +611,13 @@ function calculateProbability() {
     // Show or hide download buttons based on package selection
     const pooledPackageList = document.getElementById('pooledPackageList');
     const downloadPooledPackageBtn = document.getElementById('downloadPooledPackageBtn');
+    const downloadPooledCBAReportBtn = document.getElementById('downloadPooledCBAReportBtn');
     if (pooledPackageList.children.length > 0) {
         downloadPooledPackageBtn.style.display = 'inline-block';
+        downloadPooledCBAReportBtn.style.display = 'inline-block';
     } else {
         downloadPooledPackageBtn.style.display = 'none';
+        downloadPooledCBAReportBtn.style.display = 'none';
     }
 
     // Calculate and Display Costs
@@ -628,7 +637,7 @@ function calculateProbability() {
 
     // Calculate and Display WTP
     const pooledWTPValue = results["Moderately Lonely"].WTP;
-    document.getElementById('pooledWTP').innerText = pooledWTPValue.toLocaleString();
+    document.getElementById('pooledWTP').innerText = costsFormatted(pooledWTPValue);
 
     // Update Pooled WTP Chart
     pooledWTPChart.data.datasets[0].data = [pooledWTPValue];
@@ -655,18 +664,21 @@ function calculateProbability() {
         probChart.update();
 
         // Update Interpretation
-        document.getElementById(`${category.replace(/ /g, '')}Interpretation`).innerHTML = results[category].interpretation;
+        document.getElementById(`${category}Interpretation`).innerHTML = results[category].interpretation;
 
         // Update Program Package
-        document.getElementById(`${category.replace(/ /g, '')}PackageList`).innerHTML = results[category].packageList;
+        document.getElementById(`${category}PackageList`).innerHTML = results[category].packageList;
 
         // Show or hide download buttons based on package selection
-        const packageList = document.getElementById(`${category.replace(/ /g, '')}PackageList`);
-        const downloadPackageBtn = document.getElementById(`download${category.replace(/ /g, '')}PackageBtn`);
+        const packageList = document.getElementById(`${category}PackageList`);
+        const downloadPackageBtn = document.getElementById(`download${category}PackageBtn`);
+        const downloadCBAReportBtn = document.getElementById(`download${category}CBAReportBtn`);
         if (packageList.children.length > 0) {
             downloadPackageBtn.style.display = 'inline-block';
+            downloadCBAReportBtn.style.display = 'inline-block';
         } else {
             downloadPackageBtn.style.display = 'none';
+            downloadCBAReportBtn.style.display = 'none';
         }
 
         // Update Cost Analysis
@@ -679,16 +691,17 @@ function calculateProbability() {
         displayCBA(category, calculateTotalCost(adjustCosts, state).grandTotal, results[category].benefits);
 
         // Update CBA Chart
-        const cbaChart = categoryCharts[`${category.replace(/ /g, '')}CBAChart`];
+        const cbaChart = categoryCharts[`${category}CBAChart`];
         cbaChart.data.datasets[0].data = [calculateTotalCost(adjustCosts, state).grandTotal, results[category].benefits];
         cbaChart.update();
 
         // Update WTP
-        document.getElementById(`${category.replace(/ /g, '')}WTP`).innerText = results[category].WTP.toLocaleString();
+        const WTPValue = results[category].WTP;
+        document.getElementById(`${category}WTP`).innerText = costsFormatted(WTPValue);
 
         // Update WTP Chart
-        const wtpChart = categoryCharts[`${category.replace(/ /g, '')}WTPChart`];
-        wtpChart.data.datasets[0].data = [results[category].WTP];
+        const wtpChart = categoryCharts[`${category}WTPChart`];
+        wtpChart.data.datasets[0].data = [WTPValue];
         wtpChart.update();
     });
 }
@@ -740,7 +753,7 @@ function generateCostList() {
         const costs = costData[attr];
         for (let key in costs) {
             if (costs[key] > 0) {
-                listItems += `<li>${capitalizeFirstLetter(key)}: \$${costs[key].toLocaleString()}</li>`;
+                listItems += `<li>${capitalizeFirstLetter(key)}: \$${costsFormatted(costs[key])}</li>`;
             }
         }
     });
@@ -807,9 +820,7 @@ function calculateBenefits(probability) {
 
 // Function to calculate WTP
 function calculateWTP(benefits, costs) {
-    // WTP can be interpreted as the difference between benefits and costs
-    // Alternatively, it can be a ratio or another metric based on requirements
-    // Here, we'll define WTP as the net benefit
+    // Define WTP as net benefit
     return benefits - costs;
 }
 
@@ -853,12 +864,6 @@ function displayCBA(category, totalCost, benefits) {
     bcrDisplay.innerText = bcr.toFixed(2);
 }
 
-// Function to display WTP
-function displayWTP(category, wtp) {
-    const WTPDisplay = document.getElementById(`${category}WTP`);
-    WTPDisplay.innerText = costsFormatted(wtp);
-}
-
 // Function to format costs
 function costsFormatted(amount) {
     return amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -885,10 +890,10 @@ function downloadPackage(category) {
     } else {
         const packageList = document.getElementById(`${category}PackageList`);
         if (packageList.children.length === 0) {
-            alert(`No program package selected to download for ${category.replace(/([A-Z])/g, ' $1').trim()}.`);
+            alert(`No program package selected to download for ${formatCategoryName(category)}.`);
             return;
         }
-        packageText = `Selected Program Package (${category.replace(/([A-Z])/g, ' $1').trim()}):\n`;
+        packageText = `Selected Program Package (${formatCategoryName(category)}):\n`;
         for (let li of packageList.children) {
             packageText += li.innerText + '\n';
         }
@@ -946,18 +951,39 @@ function downloadCBAPDF(category) {
     doc.text(`Net Benefit: $${data.netBenefit} AUD`, 10, 80);
     doc.text(`Benefit-Cost Ratio: ${data.bcr}`, 10, 90);
 
+    // Save PDF
     doc.save(`${category}_CBA_Report.pdf`);
 
     alert("Cost-Benefit Analysis report downloaded successfully!");
 }
 
 // Function to open a tab (already defined above)
+function openTab(evt, tabName) {
+    const tabContents = document.getElementsByClassName("tab-content");
+    for (let content of tabContents) {
+        content.classList.remove("active");
+    }
 
-// Function to calculate WTP
-// Already handled within calculateProbability function
+    const tabButtons = document.getElementsByClassName("tab-button");
+    for (let btn of tabButtons) {
+        btn.classList.remove("active");
+    }
 
-// Function to update charts and sections for categories
-// Already handled within calculateProbability function
+    document.getElementById(tabName).classList.add("active");
+    evt.currentTarget.classList.add("active");
+}
+
+// Function to calculate Willingness To Pay (WTP)
+function calculateWTP(benefits, costs) {
+    // Define WTP as net benefit
+    return benefits - costs;
+}
+
+// Function to display WTP
+function displayWTP(category, wtp) {
+    const WTPDisplay = document.getElementById(`${category}WTP`);
+    WTPDisplay.innerText = costsFormatted(wtp);
+}
 
 // Function to initialize Category Charts
 function initializeCategoryCharts() {
@@ -965,7 +991,7 @@ function initializeCategoryCharts() {
     categories.forEach(category => {
         // Uptake Probability Chart
         const ctxProb = document.getElementById(`${category}ProbabilityChart`).getContext('2d');
-        const probChart = new Chart(ctxProb, {
+        categoryCharts[`${category}ProbabilityChart`] = new Chart(ctxProb, {
             type: 'doughnut',
             data: {
                 labels: ['Uptake Probability', 'Remaining'],
@@ -991,7 +1017,7 @@ function initializeCategoryCharts() {
                     },
                     title: {
                         display: true,
-                        text: `Predicted Probability of Uptake - ${category.replace(/([A-Z])/g, ' $1').trim()}`,
+                        text: `Predicted Probability of Uptake - ${formatCategoryName(category)}`,
                         font: {
                             size: 18
                         },
@@ -1003,7 +1029,7 @@ function initializeCategoryCharts() {
 
         // Cost-Benefit Analysis Chart
         const ctxCBA = document.getElementById(`${category}CBAChart`).getContext('2d');
-        const cbaChart = new Chart(ctxCBA, {
+        categoryCharts[`${category}CBAChart`] = new Chart(ctxCBA, {
             type: 'bar',
             data: {
                 labels: ['Total Costs', 'Total Benefits'],
@@ -1035,7 +1061,7 @@ function initializeCategoryCharts() {
                     },
                     title: {
                         display: true,
-                        text: `Cost-Benefit Analysis - ${category.replace(/([A-Z])/g, ' $1').trim()}`,
+                        text: `Cost-Benefit Analysis - ${formatCategoryName(category)}`,
                         font: {
                             size: 18
                         },
@@ -1047,7 +1073,7 @@ function initializeCategoryCharts() {
 
         // WTP Chart
         const ctxWTP = document.getElementById(`${category}WTPChart`).getContext('2d');
-        const WTPChart = new Chart(ctxWTP, {
+        categoryCharts[`${category}WTPChart`] = new Chart(ctxWTP, {
             type: 'bar',
             data: {
                 labels: ['Willingness To Pay (AUD)'],
@@ -1073,7 +1099,7 @@ function initializeCategoryCharts() {
                     },
                     title: {
                         display: true,
-                        text: `Willingness To Pay (WTP) - ${category.replace(/([A-Z])/g, ' $1').trim()}`,
+                        text: `Willingness To Pay (WTP) - ${formatCategoryName(category)}`,
                         font: {
                             size: 18
                         },
@@ -1083,6 +1109,11 @@ function initializeCategoryCharts() {
             }
         });
     }
+
+// Function to initialize WTP Charts
+function initializeWTPCcharts() {
+    // WTP Charts are initialized in initializePooledCharts and initializeCategoryCharts
+    // No additional initialization required here
 }
 
 // Function to generate brief interpretations based on probability
@@ -1100,6 +1131,12 @@ function generateInterpretations(probability) {
     return interpretation;
 }
 
+// Helper Function to Format Category Names
+function formatCategoryName(category) {
+    // Convert 'NotLonely' to 'Not Lonely', etc.
+    return category.replace(/([A-Z])/g, ' $1').trim();
+}
+
 // Function to calculate Willingness To Pay (WTP)
 function calculateWTP(benefits, costs) {
     // Define WTP as net benefit
@@ -1111,26 +1148,87 @@ function costsFormatted(amount) {
     return amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
+// Function to capitalize first letter
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 // Function to display WTP
 function displayWTP(category, wtp) {
     const WTPDisplay = document.getElementById(`${category}WTP`);
     WTPDisplay.innerText = costsFormatted(wtp);
 }
 
-// Function to open tabs
-function openTab(evt, tabName) {
-    const tabContents = document.getElementsByClassName("tab-content");
-    for (let content of tabContents) {
-        content.classList.remove("active");
-    }
+// Function to download all CBA reports as PDFs
+function downloadAllCBAs() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let yPosition = 10;
 
-    const tabButtons = document.getElementsByClassName("tab-button");
-    for (let btn of tabButtons) {
-        btn.classList.remove("active");
-    }
+    const categories = ["NotLonely", "ModeratelyLonely", "SeverelyLonely"];
 
-    document.getElementById(tabName).classList.add("active");
-    evt.currentTarget.classList.add("active");
+    categories.forEach((category, index) => {
+        // Get data from the page
+        const probability = document.getElementById(`${category}Probability`).innerText;
+        const totalCost = document.getElementById(`${category}TotalCost`).innerText;
+        const benefits = document.getElementById(`${category}Benefits`).innerText;
+        const netBenefit = document.getElementById(`${category}NetBenefit`).innerText;
+        const bcr = document.getElementById(`${category}BCR`).innerText;
+
+        doc.setFontSize(16);
+        doc.text(`Cost-Benefit Analysis Report - ${formatCategoryName(category)}`, 10, yPosition);
+        yPosition += 10;
+        doc.setFontSize(12);
+        doc.text(`Total Estimated Cost: $${totalCost} AUD`, 10, yPosition);
+        yPosition += 10;
+        doc.text(`Total Estimated Benefits: $${benefits} AUD`, 10, yPosition);
+        yPosition += 10;
+        doc.text(`Net Benefit: $${netBenefit} AUD`, 10, yPosition);
+        yPosition += 10;
+        doc.text(`Benefit-Cost Ratio: ${bcr}`, 10, yPosition);
+        
+        yPosition += 20;
+
+        if (yPosition > 270 && index < categories.length - 1) { // Avoid adding a page after the last category
+            doc.addPage();
+            yPosition = 10;
+        }
+    });
+
+    doc.save('All_CBA_Reports.pdf');
+
+    alert("All Cost-Benefit Analysis reports downloaded successfully!");
+}
+
+// Function to download all WTP reports as PDFs
+function downloadAllWTPCPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let yPosition = 10;
+
+    const categories = ["NotLonely", "ModeratelyLonely", "SeverelyLonely"];
+
+    categories.forEach((category, index) => {
+        // Get WTP data from the page
+        const WTP = document.getElementById(`${category}WTP`).innerText;
+
+        doc.setFontSize(16);
+        doc.text(`Willingness To Pay (WTP) Report - ${formatCategoryName(category)}`, 10, yPosition);
+        yPosition += 10;
+        doc.setFontSize(12);
+        doc.text(`WTP: $${WTP} AUD`, 10, yPosition);
+        
+        yPosition += 20;
+
+        if (yPosition > 270 && index < categories.length - 1) { // Avoid adding a page after the last category
+            doc.addPage();
+            yPosition = 10;
+        }
+    });
+
+    doc.save('All_WTP_Reports.pdf');
+
+    alert("All Willingness To Pay reports downloaded successfully!");
 }
 
 // Function to calculate predicted probability and update the charts and tables
@@ -1260,10 +1358,13 @@ function calculateProbability() {
     // Show or hide download buttons based on package selection
     const pooledPackageList = document.getElementById('pooledPackageList');
     const downloadPooledPackageBtn = document.getElementById('downloadPooledPackageBtn');
+    const downloadPooledCBAReportBtn = document.getElementById('downloadPooledCBAReportBtn');
     if (pooledPackageList.children.length > 0) {
         downloadPooledPackageBtn.style.display = 'inline-block';
+        downloadPooledCBAReportBtn.style.display = 'inline-block';
     } else {
         downloadPooledPackageBtn.style.display = 'none';
+        downloadPooledCBAReportBtn.style.display = 'none';
     }
 
     // Calculate and Display Costs
@@ -1282,7 +1383,7 @@ function calculateProbability() {
     pooledCBAChart.update();
 
     // Calculate and Display WTP
-    const pooledWTPValue = calculateWTP(pooledBenefitsValue, pooledCostResults.grandTotal);
+    const pooledWTPValue = results["Moderately Lonely"].WTP;
     document.getElementById('pooledWTP').innerText = costsFormatted(pooledWTPValue);
 
     // Update Pooled WTP Chart
@@ -1318,10 +1419,13 @@ function calculateProbability() {
         // Show or hide download buttons based on package selection
         const packageList = document.getElementById(`${category}PackageList`);
         const downloadPackageBtn = document.getElementById(`download${category}PackageBtn`);
+        const downloadCBAReportBtn = document.getElementById(`download${category}CBAReportBtn`);
         if (packageList.children.length > 0) {
             downloadPackageBtn.style.display = 'inline-block';
+            downloadCBAReportBtn.style.display = 'inline-block';
         } else {
             downloadPackageBtn.style.display = 'none';
+            downloadCBAReportBtn.style.display = 'none';
         }
 
         // Update Cost Analysis
@@ -1350,52 +1454,6 @@ function calculateProbability() {
 }
 
 // Function to download all CBA reports as PDFs
-function downloadCBAPDF(category) {
-    let data = {};
-    if (category === 'pooled') {
-        data = {
-            state: document.getElementById('state_select').value || 'N/A',
-            adjustCosts: document.getElementById('adjust_costs').value === 'yes' ? 'Yes' : 'No',
-            cost_cont: document.getElementById('cost_cont').value,
-            totalCost: document.getElementById('pooledTotalCost').innerText,
-            benefits: document.getElementById('pooledBenefits').innerText,
-            netBenefit: document.getElementById('pooledNetBenefit').innerText,
-            bcr: document.getElementById('pooledBCR').innerText
-        };
-    } else {
-        data = {
-            state: document.getElementById('state_select').value || 'N/A',
-            adjustCosts: document.getElementById('adjust_costs').value === 'yes' ? 'Yes' : 'No',
-            cost_cont: document.getElementById('cost_cont').value,
-            totalCost: document.getElementById(`${category}TotalCost`).innerText,
-            benefits: document.getElementById(`${category}Benefits`).innerText,
-            netBenefit: document.getElementById(`${category}NetBenefit`).innerText,
-            bcr: document.getElementById(`${category}BCR`).innerText
-        };
-    }
-
-    // Initialize jsPDF
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Add content to PDF
-    doc.setFontSize(16);
-    doc.text("LonelyLess - Cost-Benefit Analysis Report", 10, 20);
-    doc.setFontSize(12);
-    doc.text(`Selected State: ${data.state}`, 10, 30);
-    doc.text(`Adjust Costs for Living Expenses: ${data.adjustCosts}`, 10, 40);
-    doc.text(`Cost Continuum: ${data.cost_cont}`, 10, 50);
-    doc.text(`Total Estimated Cost: $${data.totalCost} AUD`, 10, 60);
-    doc.text(`Total Estimated Benefits: $${data.benefits} AUD`, 10, 70);
-    doc.text(`Net Benefit: $${data.netBenefit} AUD`, 10, 80);
-    doc.text(`Benefit-Cost Ratio: ${data.bcr}`, 10, 90);
-
-    doc.save(`${category}_CBA_Report.pdf`);
-
-    alert("Cost-Benefit Analysis report downloaded successfully!");
-}
-
-// Function to download all CBA reports as PDFs
 function downloadAllCBAs() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -1412,7 +1470,7 @@ function downloadAllCBAs() {
         const bcr = document.getElementById(`${category}BCR`).innerText;
 
         doc.setFontSize(16);
-        doc.text(`Cost-Benefit Analysis Report - ${category.replace(/([A-Z])/g, ' $1').trim()}`, 10, yPosition);
+        doc.text(`Cost-Benefit Analysis Report - ${formatCategoryName(category)}`, 10, yPosition);
         yPosition += 10;
         doc.setFontSize(12);
         doc.text(`Total Estimated Cost: $${totalCost} AUD`, 10, yPosition);
@@ -1449,7 +1507,7 @@ function downloadAllWTPCPDF() {
         const WTP = document.getElementById(`${category}WTP`).innerText;
 
         doc.setFontSize(16);
-        doc.text(`Willingness To Pay (WTP) Report - ${category.replace(/([A-Z])/g, ' $1').trim()}`, 10, yPosition);
+        doc.text(`Willingness To Pay (WTP) Report - ${formatCategoryName(category)}`, 10, yPosition);
         yPosition += 10;
         doc.setFontSize(12);
         doc.text(`WTP: $${WTP} AUD`, 10, yPosition);
