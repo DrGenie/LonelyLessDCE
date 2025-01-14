@@ -14,6 +14,7 @@
 <body>
     <div class="container">
         <h1>LonelyLess - Cost-Benefit Analysis Tool</h1>
+        <p style="text-align:center; margin-bottom: 20px;">Welcome to the LonelyLess tool! This application helps you analyze the cost-effectiveness of various support programs aimed at reducing loneliness among older adults. Please fill out the form below to calculate the predicted probability of program uptake and assess its economic viability.</p>
         <form id="decisionForm">
             <!-- State Selection -->
             <div class="form-group">
@@ -161,7 +162,7 @@
                         <!-- Cost components will be listed here -->
                     </ul>
                     <p><strong>Total Estimated Cost:</strong> <span id="pooledTotalCost">--</span> AUD</p>
-                    <button id="downloadPooledCBAReportBtn" onclick="downloadCBAPDF('pooled')" aria-label="Download Pooled Cost-Benefit Analysis Report as PDF">Download CBA Report as PDF</button>
+                    <button id="downloadPooledCBAReportBtn" onclick="downloadCBAPDF('pooled')" style="display: none;" aria-label="Download Pooled Cost-Benefit Analysis Report as PDF">Download CBA Report as PDF</button>
                 </div>
                 <div class="result-section">
                     <h3>Benefit Analysis:</h3>
@@ -174,6 +175,9 @@
                 </div>
                 <div class="chart-container">
                     <canvas id="pooledCBAChart" aria-label="Bar chart showing pooled Cost-Benefit Analysis" role="img"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="pooledWTPChart" aria-label="Bar chart showing pooled Willingness To Pay" role="img"></canvas>
                 </div>
             </div>
             <!-- Results by Loneliness Category Tab -->
@@ -196,14 +200,21 @@
                         <!-- Cost components will be listed here -->
                     </ul>
                     <p><strong>Total Estimated Cost:</strong> <span id="NotLonelyTotalCost">--</span> AUD</p>
-                    <button id="downloadNotLonelyCBAReportBtn" onclick="downloadCBAPDF('NotLonely')" aria-label="Download Not Lonely Cost-Benefit Analysis Report as PDF">Download CBA Report as PDF</button>
-                    <h3>Benefit Analysis:</h3>
-                    <p><strong>Total Estimated Benefits:</strong> <span id="NotLonelyBenefits">--</span> AUD</p>
-                    <h3>Cost-Benefit Analysis:</h3>
-                    <p><strong>Net Benefit:</strong> <span id="NotLonelyNetBenefit">--</span> AUD</p>
-                    <p><strong>Benefit-Cost Ratio:</strong> <span id="NotLonelyBCR">--</span></p>
+                    <button id="downloadNotLonelyCBAReportBtn" onclick="downloadCBAPDF('NotLonely')" style="display: none;" aria-label="Download Not Lonely Cost-Benefit Analysis Report as PDF">Download CBA Report as PDF</button>
+                    <div class="result-section">
+                        <h3>Benefit Analysis:</h3>
+                        <p><strong>Total Estimated Benefits:</strong> <span id="NotLonelyBenefits">--</span> AUD</p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Cost-Benefit Analysis:</h3>
+                        <p><strong>Net Benefit:</strong> <span id="NotLonelyNetBenefit">--</span> AUD</p>
+                        <p><strong>Benefit-Cost Ratio:</strong> <span id="NotLonelyBCR">--</span></p>
+                    </div>
                     <div class="chart-container">
                         <canvas id="NotLonelyCBAChart" aria-label="Bar chart showing Cost-Benefit Analysis for Not Lonely category" role="img"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="NotLonelyWTPChart" aria-label="Bar chart showing Willingness To Pay for Not Lonely category" role="img"></canvas>
                     </div>
                 </div>
                 <!-- Moderately Lonely Section -->
@@ -224,14 +235,21 @@
                         <!-- Cost components will be listed here -->
                     </ul>
                     <p><strong>Total Estimated Cost:</strong> <span id="ModeratelyLonelyTotalCost">--</span> AUD</p>
-                    <button id="downloadModeratelyLonelyCBAReportBtn" onclick="downloadCBAPDF('ModeratelyLonely')" aria-label="Download Moderately Lonely Cost-Benefit Analysis Report as PDF">Download CBA Report as PDF</button>
-                    <h3>Benefit Analysis:</h3>
-                    <p><strong>Total Estimated Benefits:</strong> <span id="ModeratelyLonelyBenefits">--</span> AUD</p>
-                    <h3>Cost-Benefit Analysis:</h3>
-                    <p><strong>Net Benefit:</strong> <span id="ModeratelyLonelyNetBenefit">--</span> AUD</p>
-                    <p><strong>Benefit-Cost Ratio:</strong> <span id="ModeratelyLonelyBCR">--</span></p>
+                    <button id="downloadModeratelyLonelyCBAReportBtn" onclick="downloadCBAPDF('ModeratelyLonely')" style="display: none;" aria-label="Download Moderately Lonely Cost-Benefit Analysis Report as PDF">Download CBA Report as PDF</button>
+                    <div class="result-section">
+                        <h3>Benefit Analysis:</h3>
+                        <p><strong>Total Estimated Benefits:</strong> <span id="ModeratelyLonelyBenefits">--</span> AUD</p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Cost-Benefit Analysis:</h3>
+                        <p><strong>Net Benefit:</strong> <span id="ModeratelyLonelyNetBenefit">--</span> AUD</p>
+                        <p><strong>Benefit-Cost Ratio:</strong> <span id="ModeratelyLonelyBCR">--</span></p>
+                    </div>
                     <div class="chart-container">
                         <canvas id="ModeratelyLonelyCBAChart" aria-label="Bar chart showing Cost-Benefit Analysis for Moderately Lonely category" role="img"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="ModeratelyLonelyWTPChart" aria-label="Bar chart showing Willingness To Pay for Moderately Lonely category" role="img"></canvas>
                     </div>
                 </div>
                 <!-- Severely Lonely Section -->
@@ -252,14 +270,21 @@
                         <!-- Cost components will be listed here -->
                     </ul>
                     <p><strong>Total Estimated Cost:</strong> <span id="SeverelyLonelyTotalCost">--</span> AUD</p>
-                    <button id="downloadSeverelyLonelyCBAReportBtn" onclick="downloadCBAPDF('SeverelyLonely')" aria-label="Download Severely Lonely Cost-Benefit Analysis Report as PDF">Download CBA Report as PDF</button>
-                    <h3>Benefit Analysis:</h3>
-                    <p><strong>Total Estimated Benefits:</strong> <span id="SeverelyLonelyBenefits">--</span> AUD</p>
-                    <h3>Cost-Benefit Analysis:</h3>
-                    <p><strong>Net Benefit:</strong> <span id="SeverelyLonelyNetBenefit">--</span> AUD</p>
-                    <p><strong>Benefit-Cost Ratio:</strong> <span id="SeverelyLonelyBCR">--</span></p>
+                    <button id="downloadSeverelyLonelyCBAReportBtn" onclick="downloadCBAPDF('SeverelyLonely')" style="display: none;" aria-label="Download Severely Lonely Cost-Benefit Analysis Report as PDF">Download CBA Report as PDF</button>
+                    <div class="result-section">
+                        <h3>Benefit Analysis:</h3>
+                        <p><strong>Total Estimated Benefits:</strong> <span id="SeverelyLonelyBenefits">--</span> AUD</p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Cost-Benefit Analysis:</h3>
+                        <p><strong>Net Benefit:</strong> <span id="SeverelyLonelyNetBenefit">--</span> AUD</p>
+                        <p><strong>Benefit-Cost Ratio:</strong> <span id="SeverelyLonelyBCR">--</span></p>
+                    </div>
                     <div class="chart-container">
                         <canvas id="SeverelyLonelyCBAChart" aria-label="Bar chart showing Cost-Benefit Analysis for Severely Lonely category" role="img"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="SeverelyLonelyWTPChart" aria-label="Bar chart showing Willingness To Pay for Severely Lonely category" role="img"></canvas>
                     </div>
                 </div>
             </div>
