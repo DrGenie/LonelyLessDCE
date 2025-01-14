@@ -378,17 +378,45 @@ function calculateProbability() {
     // Update CBA Chart
     updateCBACChart(costResults.grandTotal, benefitsValue);
 
-    // Send Data to Category Results Window
-    sendDataToCategoryResults({
-        probability: (P_final * 100).toFixed(2) + '%',
-        interpretation: generateInterpretations(P_final),
-        packageList: packageList.innerHTML,
-        costList: costListHTML(costResults.totalCost),
-        totalCost: costResults.grandTotal.toLocaleString(),
-        benefits: benefitsValue.toLocaleString(),
-        netBenefit: (benefitsValue - costResults.grandTotal).toLocaleString(),
-        bcr: (benefitsValue / costResults.grandTotal).toFixed(2)
-    });
+    // Prepare Data for Category Results
+    const categoriesData = {
+        "Not Lonely": {
+            probability: (P_final * 100).toFixed(2) + '%',
+            interpretation: generateInterpretations(P_final),
+            packageList: packageList.innerHTML,
+            costList: costListHTML(costResults.totalCost),
+            totalCost: costResults.grandTotal.toLocaleString(),
+            benefits: benefitsValue.toLocaleString(),
+            netBenefit: (benefitsValue - costResults.grandTotal).toLocaleString(),
+            bcr: (benefitsValue / costResults.grandTotal).toFixed(2)
+        },
+        "Moderately Lonely": {
+            probability: (P_final * 100).toFixed(2) + '%',
+            interpretation: generateInterpretations(P_final),
+            packageList: packageList.innerHTML,
+            costList: costListHTML(costResults.totalCost),
+            totalCost: costResults.grandTotal.toLocaleString(),
+            benefits: benefitsValue.toLocaleString(),
+            netBenefit: (benefitsValue - costResults.grandTotal).toLocaleString(),
+            bcr: (benefitsValue / costResults.grandTotal).toFixed(2)
+        },
+        "Severely Lonely": {
+            probability: (P_final * 100).toFixed(2) + '%',
+            interpretation: generateInterpretations(P_final),
+            packageList: packageList.innerHTML,
+            costList: costListHTML(costResults.totalCost),
+            totalCost: costResults.grandTotal.toLocaleString(),
+            benefits: benefitsValue.toLocaleString(),
+            netBenefit: (benefitsValue - costResults.grandTotal).toLocaleString(),
+            bcr: (benefitsValue / costResults.grandTotal).toFixed(2)
+        }
+    };
+
+    // Store Data in localStorage
+    localStorage.setItem('lonelyLessResults', JSON.stringify(categoriesData));
+
+    // Open categoryResults.html in a new window
+    window.open('categoryResults.html', '_blank');
 }
 
 // Function to generate brief interpretations based on probability
@@ -681,12 +709,15 @@ function updateCBACChart(totalCost, benefits) {
 
 // Function to view results by loneliness category
 function viewByLonelinessCategory() {
-    // Open a new window and store the reference
-    const categoryWindow = window.open("categoryResults.html", "LonelinessCategoryResults", "width=1200,height=800");
-    if (!categoryWindow) {
-        alert("Failed to open the results window. Please allow pop-ups for this website.");
+    // Store data in localStorage
+    const storedData = localStorage.getItem('lonelyLessResults');
+    if (!storedData) {
+        alert("No results available to display. Please calculate first.");
         return;
     }
+
+    // Open categoryResults.html in a new window
+    window.open('categoryResults.html', '_blank');
 }
 
 // Feedback Form Submission Handler
@@ -700,17 +731,5 @@ document.getElementById('feedbackForm').addEventListener('submit', function(even
         document.getElementById('feedbackForm').reset();
     } else {
         alert("Please enter your feedback before submitting.");
-    }
-});
-
-// Function to send data to categoryResults.html via postMessage
-function sendDataToCategoryResults(data) {
-    const categoryWindow = window.open("categoryResults.html", "LonelinessCategoryResults", "width=1200,height=800");
-    if (categoryWindow) {
-        categoryWindow.addEventListener('load', function() {
-            categoryWindow.postMessage(data, '*'); // In production, replace '*' with the specific origin
-        }, { once: true });
-    } else {
-        alert("Failed to open the results window. Please allow pop-ups for this website.");
     }
 }
