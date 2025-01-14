@@ -96,6 +96,10 @@ button:disabled {
     margin: 0 10px;
 }
 
+.tab-buttons button.active {
+    background-color: #2980b9;
+}
+
 .tab-content {
     display: none;
 }
