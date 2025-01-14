@@ -164,7 +164,9 @@ async function fetchCostOfLivingData() {
 }
 
 // Call the fetch function on page load
-fetchCostOfLivingData();
+window.onload = function() {
+    fetchCostOfLivingData();
+};
 
 // Initialize Chart.js with Doughnut Chart for Uptake Probability
 let ctx = document.getElementById('probabilityChart').getContext('2d');
@@ -653,6 +655,9 @@ function updateCBACChart(totalCost, benefits) {
 function viewByLonelinessCategory() {
     // Open a new window
     const categoryWindow = window.open("categoryResults.html", "LonelinessCategoryResults", "width=1200,height=800");
+    if (!categoryWindow) {
+        alert("Failed to open the results window. Please allow pop-ups for this website.");
+    }
 }
 
 // Feedback Form Submission Handler
@@ -668,6 +673,3 @@ document.getElementById('feedbackForm').addEventListener('submit', function(even
         alert("Please enter your feedback before submitting.");
     }
 });
-
-// Function to fetch dynamic cost-of-living data (already defined above)
-/* ... (No need to repeat here) */
