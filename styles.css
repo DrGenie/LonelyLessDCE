@@ -45,7 +45,7 @@ header h1 {
   color: #fff;
 }
 
-/* Tabcontent */
+/* Tabcontent: all hidden by default; shown by JS */
 .tabcontent {
   display: none;
   margin-top: 10px;
