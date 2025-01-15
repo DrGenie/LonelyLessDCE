@@ -30,53 +30,56 @@
   <div id="introTab" class="tabcontent">
     <div class="intro-box">
       <p>
-        Loneliness affects over five million Australians, especially older adults, 
-        creating significant health and economic challenges. This tool uses 
-        Discrete Choice Experiment (DCE) findings to help illustrate how different 
-        programme attributes influence uptake decisions.
+        Loneliness affects over five million Australians, especially older adults, leading 
+        to significant health and economic challenges. This online decision aid tool was 
+        developed from a discrete choice experiment that identified older adults’ preferences 
+        for programmes designed to reduce loneliness in Australia. Utilising the DCE’s insights 
+        and estimates, the tool predicts the probability of uptake for different programme 
+        packages, enabling personalised support services based on key factors older adults 
+        consider when seeking support.
       </p>
       <p>
-        <strong>Navigation:</strong>
+        The loneliness categories used here were derived from the widely validated 
+        <em>De Jong Gierveld Loneliness Scale</em> (11-item version), designed to measure both 
+        emotional and social loneliness. A total loneliness score was calculated as the sum of 
+        emotional and social loneliness scores, reflecting an individual’s overall level of 
+        loneliness. Following the established methodology of the De Jong Gierveld scale, the 
+        total loneliness score was categorised into three distinct levels—Not Lonely, 
+        Moderately Lonely, and Severely Lonely. This categorisation provides insights into how 
+        preferences for interventions vary with the severity of loneliness.
+      </p>
+      <p>
+        You can navigate using the tabs above:
       </p>
       <ul>
-        <li><strong>Introduction</strong> – This overview page.</li>
-        <li><strong>Attributes</strong> – Descriptions of each DCE attribute.</li>
-        <li><strong>Inputs</strong> – Select or configure scenario attributes.</li>
-        <li><strong>WTP Results</strong> – Willingness-to-pay data and references.</li>
-        <li><strong>Costs & Benefits</strong> – Explanations of cost components and assumptions.</li>
-        <li><strong>Scenarios</strong> – Save configurations and generate multi-window PDF reports.</li>
+        <li><strong>Attributes</strong> – Descriptions of DCE attributes.</li>
+        <li><strong>Inputs</strong> – Select your scenario attributes.</li>
+        <li><strong>WTP Results</strong> – See willingness-to-pay estimates for the main model and by loneliness category.</li>
+        <li><strong>Costs & Benefits</strong> – Learn about cost components and benefit assumptions.</li>
+        <li><strong>Scenarios</strong> – Save and compare multiple configurations, generate PDF reports, etc.</li>
       </ul>
-      <p>
-        The <strong>Introduction</strong> tab is visible by default. To see other tabs, simply click their buttons above.
-      </p>
     </div>
   </div>
 
   <!-- TAB CONTENT: ATTRIBUTES -->
   <div id="attributesTab" class="tabcontent">
     <h2>Programme Attributes</h2>
+    <p><strong>Cost:</strong> This refers to the out-of-pocket cost participants will incur each time they participate in the support programme.</p>
+    <p><strong>Accessibility:</strong> This refers to the ease of accessing the programme, considering physical mobility and transportation.</p>
+    <p><strong>Frequency of Interaction:</strong> This refers to how often individuals will participate in the programme.</p>
+    <p><strong>Method of Interaction:</strong> This refers to how individuals prefer to connect, catering to those who may have mobility issues or prefer digital communication.</p>
+    <p><strong>Duration of Each Interaction:</strong> This refers to the length of each interaction or activity.</p>
+    <p><strong>Type of Support Programme:</strong> This refers to how participants connect with others and what kinds of activities they might do together.</p>
     <p>
-      Below is a concise description of each attribute considered in the Discrete Choice Experiment:
-    </p>
-    <ul>
-      <li><strong>Cost per Session:</strong> The out-of-pocket charge an older adult pays for each session.</li>
-      <li><strong>Accessibility:</strong> Whether the programme is local (12 km) or involves wider travel (50+ km).</li>
-      <li><strong>Frequency:</strong> Weekly vs. monthly sessions, with other frequencies as references in some DCEs.</li>
-      <li><strong>Delivery Method:</strong> In-person, Virtual Only, or Hybrid (both in-person & virtual).</li>
-      <li><strong>Duration:</strong> Session length (2 hours, 4 hours, or a reference standard like 30 min/1 hour).</li>
-      <li><strong>Type of Support:</strong> Community Engagement, Psychological Counselling, Virtual Reality, etc.</li>
-      <li><strong>Cost-of-Living Adjustments:</strong> Adjusting base costs by state multipliers (e.g., NSW 1.10, VIC 1.05, etc.).</li>
-    </ul>
-    <p>
-      For further detail on how these attributes were chosen, see the original DCE design. 
-      Proceed to <strong>Inputs</strong> to select them for your scenario.
+      Cost-of-living adjustments may apply, based on the user’s selected state. Please proceed to 
+      <strong>Inputs</strong> to configure your desired scenario attributes.
     </p>
   </div>
 
   <!-- TAB CONTENT: INPUTS -->
   <div id="inputsTab" class="tabcontent">
     <h2>Programme Inputs</h2>
-    <p>Select your desired attributes below, then click “Calculate & View Results” to open a results window.</p>
+    <p>Select your desired attributes below, then click “Calculate & View Results” to open a results window with predicted probabilities, cost-benefit outcomes, etc.</p>
 
     <form id="inputsForm" onsubmit="event.preventDefault();">
       <div class="form-grid">
@@ -162,9 +165,13 @@
   <div id="wtpTab" class="tabcontent">
     <h2>Willingness to Pay (WTP) Results</h2>
     <p>
-      WTP measures how much an individual is willing to pay to obtain a certain programme feature.
-      The table below shows sample WTP estimates derived from the DCE model:
+      WTP measures how much an individual is willing to pay to obtain a particular programme feature. 
+      Below are example WTP estimates for both the <strong>Main Model</strong> and results by 
+      loneliness category (<strong>Not Lonely</strong>, <strong>Moderately Lonely</strong>, and <strong>Severely Lonely</strong>).
     </p>
+
+    <!-- Main Model WTP -->
+    <h3>Main Model</h3>
     <table class="wtpTable">
       <thead>
         <tr>
@@ -175,8 +182,52 @@
           <th>WTP (AUD)</th>
         </tr>
       </thead>
-      <tbody id="wtpBody"></tbody>
+      <tbody id="wtpBodyMain"></tbody>
     </table>
+
+    <!-- By Categories (Not Lonely, Moderately Lonely, Severely Lonely) -->
+    <h3>Not Lonely</h3>
+    <table class="wtpTable">
+      <thead>
+        <tr>
+          <th>Attribute</th>
+          <th>Coefficient</th>
+          <th>p-value</th>
+          <th>Significance</th>
+          <th>WTP (AUD)</th>
+        </tr>
+      </thead>
+      <tbody id="wtpBodyNotLonely"></tbody>
+    </table>
+
+    <h3>Moderately Lonely</h3>
+    <table class="wtpTable">
+      <thead>
+        <tr>
+          <th>Attribute</th>
+          <th>Coefficient</th>
+          <th>p-value</th>
+          <th>Significance</th>
+          <th>WTP (AUD)</th>
+        </tr>
+      </thead>
+      <tbody id="wtpBodyModLonely"></tbody>
+    </table>
+
+    <h3>Severely Lonely</h3>
+    <table class="wtpTable">
+      <thead>
+        <tr>
+          <th>Attribute</th>
+          <th>Coefficient</th>
+          <th>p-value</th>
+          <th>Significance</th>
+          <th>WTP (AUD)</th>
+        </tr>
+      </thead>
+      <tbody id="wtpBodySevLonely"></tbody>
+    </table>
+
     <p>
       Significance levels: * p &lt; 0.05, ** p &lt; 0.01, *** p &lt; 0.001
     </p>
@@ -198,11 +249,11 @@
     </ul>
     <p>
       Benefits are estimated by assigning a monetary value to each percentage-point increase 
-      in programme uptake. For example, a 1% increase in uptake might yield a societal benefit 
-      of 10,000 AUD, reflecting healthcare savings and improved well-being.
+      in programme uptake (for instance, 10,000 AUD per 1% uptake).
     </p>
     <p>
-      These figures are illustrative; adjust them as needed to match your real-world estimates.
+      These figures are indicative; in practice, they should be tailored to the specific 
+      economic context and validated data.
     </p>
   </div>
 
@@ -210,9 +261,9 @@
   <div id="scenariosTab" class="tabcontent">
     <h2>Saved Scenarios</h2>
     <p>
-      After configuring your scenario in <strong>Inputs</strong> and opening the results, 
-      you can save them here. Then compare multiple scenarios in another window 
-      with PDF chart exports.
+      After configuring your scenario in <strong>Inputs</strong> and viewing the results, 
+      you can save it here. Then compare multiple scenarios in another window with 
+      PDF chart exports.
     </p>
     <div class="buttons-row">
       <button onclick="saveScenario()">Save Current Scenario</button>
@@ -246,6 +297,7 @@
     <p>&copy; 2025 LonelyLessAustralia. All Rights Reserved.</p>
   </footer>
 </div>
+
 <script src="script.js"></script>
 </body>
 </html>
