@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>LonelyLessAustralia Decision Aid Tool</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- Chart.js for charts -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- jsPDF for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -16,7 +16,6 @@
     <h1>LonelyLessAustralia Decision Aid Tool</h1>
   </header>
 
-  <!-- TAB BUTTONS -->
   <div class="tabs">
     <button class="tablink active" onclick="openTab('introTab', this)">Introduction</button>
     <button class="tablink" onclick="openTab('attributesTab', this)">Attributes</button>
@@ -26,63 +25,70 @@
     <button class="tablink" onclick="openTab('scenariosTab', this)">Scenarios</button>
   </div>
 
-  <!-- TAB CONTENT: INTRODUCTION -->
-  <div id="introTab" class="tabcontent">
+  <!-- Introduction Tab -->
+  <div id="introTab" class="tabcontent" style="display: block;">
     <div class="intro-box">
       <p>
-        Loneliness affects over five million Australians, especially older adults, leading 
-        to significant health and economic challenges. This online decision aid tool was 
-        developed from a discrete choice experiment that identified older adults’ preferences 
-        for programmes designed to reduce loneliness in Australia. Utilising the DCE’s insights 
-        and estimates, the tool predicts the probability of uptake for different programme 
-        packages, enabling personalised support services based on key factors older adults 
+        Loneliness affects over five million Australians, especially older adults, resulting in significant 
+        health and economic burdens. This online decision aid tool is developed from a discrete choice 
+        experiment that identified older adults’ preferences for programmes aimed at reducing loneliness 
+        in Australia. Utilising these DCE insights and estimates, the tool predicts uptake probabilities 
+        for different programme packages, enabling personalised services based on key factors older adults 
         consider when seeking support.
       </p>
       <p>
-        The loneliness categories used here were derived from the widely validated 
-        <em>De Jong Gierveld Loneliness Scale</em> (11-item version), designed to measure both 
-        emotional and social loneliness. A total loneliness score was calculated as the sum of 
-        emotional and social loneliness scores, reflecting an individual’s overall level of 
-        loneliness. Following the established methodology of the De Jong Gierveld scale, the 
-        total loneliness score was categorised into three distinct levels—Not Lonely, 
-        Moderately Lonely, and Severely Lonely. This categorisation provides insights into how 
-        preferences for interventions vary with the severity of loneliness.
+        The loneliness categories used in this study were derived from the widely validated 
+        <em>De Jong Gierveld Loneliness Scale</em> (11-item version). This scale measures both emotional 
+        and social loneliness, and a total loneliness score was calculated as their sum. Following the 
+        established methodology, these scores were classified into three levels—Not Lonely, Moderately 
+        Lonely, and Severely Lonely—facilitating meaningful comparisons of preferences across different 
+        levels of loneliness severity.
       </p>
       <p>
-        You can navigate using the tabs above:
+        Use the tabs above to navigate:
       </p>
       <ul>
-        <li><strong>Attributes</strong> – Descriptions of DCE attributes.</li>
-        <li><strong>Inputs</strong> – Select your scenario attributes.</li>
-        <li><strong>WTP Results</strong> – See willingness-to-pay estimates for the main model and by loneliness category.</li>
-        <li><strong>Costs & Benefits</strong> – Learn about cost components and benefit assumptions.</li>
-        <li><strong>Scenarios</strong> – Save and compare multiple configurations, generate PDF reports, etc.</li>
+        <li><strong>Attributes</strong> – Detailed descriptions of the DCE attributes.</li>
+        <li><strong>Inputs</strong> – Select or configure your scenario attributes.</li>
+        <li><strong>WTP Results</strong> – View willingness-to-pay estimates for the main model and by 
+          loneliness category.</li>
+        <li><strong>Costs & Benefits</strong> – Explore the cost components and the assumptions around 
+          benefits.</li>
+        <li><strong>Scenarios</strong> – Save multiple configurations and compare them side by side, 
+          complete with optional PDF exports.</li>
       </ul>
     </div>
   </div>
 
-  <!-- TAB CONTENT: ATTRIBUTES -->
+  <!-- Attributes Tab -->
   <div id="attributesTab" class="tabcontent">
     <h2>Programme Attributes</h2>
-    <p><strong>Cost:</strong> This refers to the out-of-pocket cost participants will incur each time they participate in the support programme.</p>
-    <p><strong>Accessibility:</strong> This refers to the ease of accessing the programme, considering physical mobility and transportation.</p>
-    <p><strong>Frequency of Interaction:</strong> This refers to how often individuals will participate in the programme.</p>
-    <p><strong>Method of Interaction:</strong> This refers to how individuals prefer to connect, catering to those who may have mobility issues or prefer digital communication.</p>
-    <p><strong>Duration of Each Interaction:</strong> This refers to the length of each interaction or activity.</p>
-    <p><strong>Type of Support Programme:</strong> This refers to how participants connect with others and what kinds of activities they might do together.</p>
+    <p><strong>Cost:</strong> The out-of-pocket cost participants incur each time they join a session.</p>
+    <p><strong>Accessibility:</strong> The ease or difficulty of attending, considering travel distance 
+      and mobility.</p>
+    <p><strong>Frequency of Interaction:</strong> How often individuals participate (e.g., weekly, monthly, 
+      or daily reference).</p>
+    <p><strong>Method of Interaction:</strong> In-person, virtual-only, or hybrid; crucial for those with 
+      limited mobility or a preference for digital connection.</p>
+    <p><strong>Duration of Each Interaction:</strong> The length of each session (e.g., 30 min, 2 hours, 
+      4 hours).</p>
+    <p><strong>Type of Support Programme:</strong> The nature of support: peer support, community engagement, 
+      psychological counselling, virtual reality, etc.</p>
     <p>
-      Cost-of-living adjustments may apply, based on the user’s selected state. Please proceed to 
-      <strong>Inputs</strong> to configure your desired scenario attributes.
+      Some costs may be adjusted by <strong>Cost-of-Living multipliers</strong> depending on the chosen state. 
+      Proceed to <strong>Inputs</strong> to explore scenarios.
     </p>
   </div>
 
-  <!-- TAB CONTENT: INPUTS -->
+  <!-- Inputs Tab -->
   <div id="inputsTab" class="tabcontent">
     <h2>Programme Inputs</h2>
-    <p>Select your desired attributes below, then click “Calculate & View Results” to open a results window with predicted probabilities, cost-benefit outcomes, etc.</p>
+    <p>Set the scenario attributes below, then click “Calculate & View Results” to open a new window with 
+      predicted probabilities, advanced cost-benefit charts, etc.</p>
 
     <form id="inputsForm" onsubmit="event.preventDefault();">
       <div class="form-grid">
+
         <!-- State & Cost-of-Living -->
         <div class="form-item">
           <label for="state_select">State:</label>
@@ -107,12 +113,16 @@
 
         <!-- Cost Slider -->
         <div class="form-item">
-          <label for="costSlider">Cost per Session (AUD): <span id="costLabel">50</span></label>
+          <label for="costSlider">
+            Cost per Session (AUD): <span id="costLabel">50</span>
+          </label>
           <input 
             type="range" 
             id="costSlider" 
-            min="0" max="100" 
-            step="1" value="50" 
+            min="0" 
+            max="100" 
+            step="1" 
+            value="50" 
             oninput="updateCostDisplay(this.value)" 
           />
         </div>
@@ -135,7 +145,7 @@
         <div class="form-item">
           <label><input type="checkbox" id="virtualCheck" />Virtual Only</label>
           <br/>
-          <label><input type="checkbox" id="hybridCheck" />Hybrid (In-Person & Virtual)</label>
+          <label><input type="checkbox" id="hybridCheck" />Hybrid (In-person & Virtual)</label>
         </div>
 
         <!-- Duration -->
@@ -153,21 +163,20 @@
           <br/>
           <label><input type="checkbox" id="vrCheck" />Virtual Reality</label>
         </div>
-      </div>
 
+      </div>
       <div class="buttons-row">
         <button type="button" onclick="openSingleScenario()">Calculate & View Results</button>
       </div>
     </form>
   </div>
 
-  <!-- TAB CONTENT: WTP RESULTS -->
+  <!-- WTP Results Tab -->
   <div id="wtpTab" class="tabcontent">
     <h2>Willingness to Pay (WTP) Results</h2>
     <p>
-      WTP measures how much an individual is willing to pay to obtain a particular programme feature. 
-      Below are example WTP estimates for both the <strong>Main Model</strong> and results by 
-      loneliness category (<strong>Not Lonely</strong>, <strong>Moderately Lonely</strong>, and <strong>Severely Lonely</strong>).
+      Below are the WTP estimates (in AUD) from the Error-Component Logit Model, including the main model 
+      and results by loneliness category.
     </p>
 
     <!-- Main Model WTP -->
@@ -185,7 +194,7 @@
       <tbody id="wtpBodyMain"></tbody>
     </table>
 
-    <!-- By Categories (Not Lonely, Moderately Lonely, Severely Lonely) -->
+    <!-- Not Lonely WTP -->
     <h3>Not Lonely</h3>
     <table class="wtpTable">
       <thead>
@@ -200,6 +209,7 @@
       <tbody id="wtpBodyNotLonely"></tbody>
     </table>
 
+    <!-- Moderately Lonely WTP -->
     <h3>Moderately Lonely</h3>
     <table class="wtpTable">
       <thead>
@@ -214,6 +224,7 @@
       <tbody id="wtpBodyModLonely"></tbody>
     </table>
 
+    <!-- Severely Lonely WTP -->
     <h3>Severely Lonely</h3>
     <table class="wtpTable">
       <thead>
@@ -233,37 +244,31 @@
     </p>
   </div>
 
-  <!-- TAB CONTENT: COSTS & BENEFITS -->
+  <!-- Costs & Benefits Tab -->
   <div id="costsTab" class="tabcontent">
     <h2>Cost Components & Benefits</h2>
-    <p>
-      The cost components considered in our analysis may include:
-    </p>
+    <p>Costs may include:</p>
     <ul>
-      <li>Staff/Personnel Costs</li>
-      <li>Facility/Equipment Costs</li>
-      <li>Marketing/Outreach</li>
+      <li>Staff/Personnel</li>
+      <li>Facilities & Equipment</li>
+      <li>Marketing & Outreach</li>
       <li>Training & Certification</li>
       <li>Miscellaneous Operational Expenses</li>
-      <li>Cost-of-Living Adjustments by State</li>
+      <li>Cost-of-Living Multipliers (by state)</li>
     </ul>
     <p>
-      Benefits are estimated by assigning a monetary value to each percentage-point increase 
-      in programme uptake (for instance, 10,000 AUD per 1% uptake).
-    </p>
-    <p>
-      These figures are indicative; in practice, they should be tailored to the specific 
-      economic context and validated data.
+      Benefits are modelled by attributing a monetary value per 1% improvement in uptake. 
+      These figures can be adjusted to reflect real-world data and validated cost-benefit 
+      evaluations.
     </p>
   </div>
 
-  <!-- TAB CONTENT: SCENARIOS -->
+  <!-- Scenarios Tab -->
   <div id="scenariosTab" class="tabcontent">
     <h2>Saved Scenarios</h2>
     <p>
-      After configuring your scenario in <strong>Inputs</strong> and viewing the results, 
-      you can save it here. Then compare multiple scenarios in another window with 
-      PDF chart exports.
+      Save the current scenario from the <strong>Inputs</strong> tab, then compare multiple 
+      scenarios in another window using advanced cost-benefit charts or PDF downloads.
     </p>
     <div class="buttons-row">
       <button onclick="saveScenario()">Save Current Scenario</button>
@@ -294,10 +299,14 @@
   </div>
 
   <footer>
-    <p>&copy; 2025 LonelyLessAustralia. All Rights Reserved.</p>
+    <p>
+      &copy; 2025 LonelyLessAustralia. All Rights Reserved. <br/>
+      Author: Mesfin Genie, Newcastle Business School, The University of Newcastle, Australia
+    </p>
   </footer>
 </div>
 
+<!-- Reference main script -->
 <script src="script.js"></script>
 </body>
 </html>
