@@ -1,4 +1,4 @@
-/* Overall Container */
+/* Overall Layout */
 body {
   margin: 0;
   padding: 0;
@@ -45,7 +45,7 @@ header h1 {
   color: #fff;
 }
 
-/* Tabcontent: all hidden by default; shown by JS */
+/* Tabcontent (hidden by default) */
 .tabcontent {
   display: none;
   margin-top: 10px;
@@ -54,17 +54,17 @@ header h1 {
   margin-top: 0;
 }
 
-/* Intro Box */
+/* Introduction Box */
 .intro-box {
   background-color: #e8f4fd;
   padding: 20px;
   border-left: 5px solid #3498db;
   border-radius: 4px;
   font-size: 1.1em;
-  line-height: 1.6em;
+  line-height: 1.5em;
 }
 
-/* Form Grid */
+/* Attributes, Inputs, etc. */
 .form-grid {
   display: grid;
   gap: 20px;
@@ -103,23 +103,6 @@ header h1 {
   background-color: #1e8449;
 }
 
-/* Table for Scenarios */
-#scenarioTable {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-#scenarioTable th, #scenarioTable td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-#scenarioTable th {
-  background: #2980b9;
-  color: #fff;
-  font-weight: normal;
-}
-
 /* Range Slider Label */
 #costLabel {
   color: #e74c3c;
@@ -132,13 +115,33 @@ header h1 {
   border-collapse: collapse;
   margin-top: 15px;
 }
-.wtpTable th, .wtpTable td {
+.wtpTable th, 
+.wtpTable td {
   border: 1px solid #ddd;
   padding: 8px;
 }
 .wtpTable th {
   background: #2980b9;
   color: #fff;
+  font-weight: normal;
+}
+
+/* Scenarios Table */
+#scenarioTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+#scenarioTable th, 
+#scenarioTable td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+#scenarioTable th {
+  background: #2980b9;
+  color: #fff;
+  font-weight: normal;
 }
 
 /* Footer */
