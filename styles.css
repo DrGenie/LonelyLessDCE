@@ -126,11 +126,11 @@ header h1 {
   font-weight: bold;
 }
 
-/* WTP Table */
+/* WTP Tables */
 .wtpTable {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 15px;
 }
 .wtpTable th, .wtpTable td {
   border: 1px solid #ddd;
