@@ -1,1183 +1,569 @@
-/* script.js */
+/****************************************************
+ * 1) TAB SWITCHING
+ ****************************************************/
+function openTab(tabId, element) {
+  const tabcontent = document.getElementsByClassName("tabcontent");
+  for (let i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  const tablinks = document.getElementsByClassName("tablink");
+  for (let j = 0; j < tablinks.length; j++) {
+    tablinks[j].classList.remove("active");
+  }
+  document.getElementById(tabId).style.display = "block";
+  element.classList.add("active");
+}
 
-// Model Coefficients - Final DCE Study Results
-const coefficients = {
-    // Overall Model
-    overall: {
-        ASC_alt1: -0.112,
-        ASC_optout: 0.131,
-        type_comm: 0.527,
-        type_psych: 0.156,
-        type_vr: -0.349,
-        mode_virtual: -0.426,
-        mode_hybrid: -0.289,
-        freq_weekly: 0.617,
-        freq_monthly: 0.336,
-        dur_2hrs: 0.185,
-        dur_4hrs: 0.213,
-        dist_local: 0.059,
-        dist_signif: -0.509,
-        cost_cont: -0.036
-    },
-    // Loneliness Categories
-    categories: {
-        not_lonely: {
-            ASC_alt1: -0.149,
-            ASC_optout: 0.151,
-            type_comm: 0.369,
-            type_psych: -0.019,
-            type_vr: -0.375,
-            mode_virtual: -0.604,
-            mode_hybrid: -0.289,
-            freq_weekly: 0.759,
-            freq_monthly: 0.540,
-            dur_2hrs: 0.031,
-            dur_4hrs: 0.243,
-            dist_local: -0.041,
-            dist_signif: -0.814,
-            cost_cont: -0.034
-        },
-        moderately_lonely: {
-            ASC_alt1: -0.145,
-            ASC_optout: 0.074,
-            type_comm: 0.532,
-            type_psych: 0.178,
-            type_vr: -0.204,
-            mode_virtual: -0.320,
-            mode_hybrid: -0.402,
-            freq_weekly: 0.555,
-            freq_monthly: 0.357,
-            dur_2hrs: 0.322,
-            dur_4hrs: 0.266,
-            dist_local: 0.082,
-            dist_signif: -0.467,
-            cost_cont: -0.042
-        },
-        severely_lonely: {
-            ASC_alt1: -0.028,
-            ASC_optout: 0.160,
-            type_comm: 0.734,
-            type_psych: 0.317,
-            type_vr: -0.567,
-            mode_virtual: -0.353,
-            mode_hybrid: -0.151,
-            freq_weekly: 0.540,
-            freq_monthly: 0.042,
-            dur_2hrs: 0.157,
-            dur_4hrs: 0.060,
-            dist_local: 0.211,
-            dist_signif: -0.185,
-            cost_cont: -0.033
-        }
-    }
+/****************************************************
+ * 2) DCE COEFFICIENTS & COST-OF-LIVING MULTIPLIERS
+ *    (As previously defined)
+ ****************************************************/
+const finalCoefficients = {
+  main: {
+    ASC_mean: -0.112,
+    ASC_optout: 0.131,
+    type_comm: 0.527,
+    type_psych: 0.156,
+    type_vr: -0.349,
+    mode_virtual: -0.426,
+    mode_hybrid: -0.289,
+    freq_weekly: 0.617,
+    freq_monthly: 0.336,
+    dur_2hrs: 0.185,
+    dur_4hrs: 0.213,
+    dist_local: 0.059,
+    dist_signif: -0.509,
+    cost_cont: -0.036
+  },
+  notLonely: {
+    ASC_mean: -0.149,
+    ASC_optout: 0.151,
+    type_comm: 0.369,
+    type_psych: -0.019,
+    type_vr: -0.375,
+    mode_virtual: -0.604,
+    mode_hybrid: -0.289,
+    freq_weekly: 0.759,
+    freq_monthly: 0.540,
+    dur_2hrs: 0.031,
+    dur_4hrs: 0.243,
+    dist_local: -0.041,
+    dist_signif: -0.814,
+    cost_cont: -0.034
+  },
+  moderatelyLonely: {
+    ASC_mean: -0.145,
+    ASC_optout: 0.074,
+    type_comm: 0.532,
+    type_psych: 0.178,
+    type_vr: -0.204,
+    mode_virtual: -0.320,
+    mode_hybrid: -0.402,
+    freq_weekly: 0.555,
+    freq_monthly: 0.357,
+    dur_2hrs: 0.322,
+    dur_4hrs: 0.266,
+    dist_local: 0.082,
+    dist_signif: -0.467,
+    cost_cont: -0.042
+  },
+  severelyLonely: {
+    ASC_mean: -0.028,
+    ASC_optout: 0.160,
+    type_comm: 0.734,
+    type_psych: 0.317,
+    type_vr: -0.567,
+    mode_virtual: -0.353,
+    mode_hybrid: -0.151,
+    freq_weekly: 0.540,
+    freq_monthly: 0.042,
+    dur_2hrs: 0.157,
+    dur_4hrs: 0.060,
+    dist_local: 0.211,
+    dist_signif: -0.185,
+    cost_cont: -0.033
+  }
 };
 
-// Cost Data for Each Program Attribute
-const costData = {
-    type_comm: {
-        personnel: 20000,
-        materials: 2000,
-        technology: 3000,
-        facility: 5000,
-        marketing: 5000,
-        training: 1000,
-        miscellaneous: 1000
-    },
-    type_psych: {
-        personnel: 25000,
-        materials: 1500,
-        technology: 2000,
-        facility: 4000,
-        marketing: 4000,
-        training: 800,
-        miscellaneous: 1200
-    },
-    type_vr: {
-        personnel: 18000,
-        materials: 1000,
-        technology: 5000,
-        facility: 3000,
-        marketing: 3000,
-        training: 700,
-        miscellaneous: 800
-    },
-    mode_virtual: {
-        personnel: 5000,
-        materials: 500,
-        technology: 4000,
-        facility: 0,
-        marketing: 1000,
-        training: 300,
-        miscellaneous: 500
-    },
-    mode_hybrid: {
-        personnel: 7000,
-        materials: 800,
-        technology: 4500,
-        facility: 2000,
-        marketing: 1200,
-        training: 400,
-        miscellaneous: 600
-    },
-    freq_weekly: {
-        personnel: 10000,
-        materials: 1200,
-        technology: 1500,
-        facility: 3000,
-        marketing: 1500,
-        training: 500,
-        miscellaneous: 700
-    },
-    freq_monthly: {
-        personnel: 8000,
-        materials: 1000,
-        technology: 1200,
-        facility: 2500,
-        marketing: 1300,
-        training: 400,
-        miscellaneous: 600
-    },
-    dur_2hrs: {
-        personnel: 3000,
-        materials: 500,
-        technology: 800,
-        facility: 1000,
-        marketing: 700,
-        training: 200,
-        miscellaneous: 300
-    },
-    dur_4hrs: {
-        personnel: 4000,
-        materials: 700,
-        technology: 1000,
-        facility: 1500,
-        marketing: 900,
-        training: 300,
-        miscellaneous: 400
-    },
-    cost_cont: {
-        personnel: 0, // Assuming cost continuum is a scaling factor
-        materials: 0,
-        technology: 0,
-        facility: 0,
-        marketing: 0,
-        training: 0,
-        miscellaneous: 0
-    },
-    dist_local: {
-        personnel: 5000,
-        materials: 800,
-        technology: 1000,
-        facility: 2000,
-        marketing: 1000,
-        training: 300,
-        miscellaneous: 500
-    },
-    dist_signif: {
-        personnel: 6000,
-        materials: 900,
-        technology: 1100,
-        facility: 2200,
-        marketing: 1100,
-        training: 350,
-        miscellaneous: 550
-    },
-    // Add more attributes as needed
-};
-
-// Benefit Parameters
-const benefitPerPercent = 10000; // $10,000 AUD per 1% uptake probability
-
-// Cost-of-Living Multipliers by State
 const costOfLivingMultipliers = {
-    NSW: 1.10, // New South Wales
-    VIC: 1.05, // Victoria
-    QLD: 1.00, // Queensland
-    WA: 1.08,  // Western Australia
-    SA: 1.02,  // South Australia
-    TAS: 1.03, // Tasmania
-    ACT: 1.15, // Australian Capital Territory
-    NT: 1.07   // Northern Territory
+  NSW: 1.10,
+  VIC: 1.05,
+  QLD: 1.00,
+  WA: 1.08,
+  SA: 1.02,
+  TAS: 1.03,
+  ACT: 1.15,
+  NT: 1.07
 };
 
-// Initialize Chart.js with Doughnut Chart for Uptake Probability
-let ctx = document.getElementById('probabilityChart').getContext('2d');
-let probabilityChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-        labels: ['Uptake Probability', 'Remaining'],
-        datasets: [{
-            data: [0, 1],
-            backgroundColor: ['rgba(39, 174, 96, 0.6)', 'rgba(236, 240, 241, 0.3)'], // Green and Light Gray
-            borderColor: ['rgba(39, 174, 96, 1)', 'rgba(236, 240, 241, 1)'],
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    font: {
-                        size: 14
-                    },
-                    color: '#34495e'
+// Basic WTP data (example) for the WTP tab
+const wtpData = [
+  { attribute: "Community Engagement", coef: 0.527, pval: 0.000, sig: "***", wtp: 15.0 },
+  { attribute: "Psychological Counselling", coef: 0.156, pval: 0.245, sig: "", wtp: 4.3 },
+  { attribute: "Virtual Reality", coef: -0.349, pval: 0.009, sig: "**", wtp: -9.7 },
+  { attribute: "Virtual Only (Method)", coef: -0.426, pval: 0.019, sig: "**", wtp: -11.8 },
+  { attribute: "Hybrid (Method)", coef: -0.289, pval: 0.001, sig: "***", wtp: -8.0 },
+  { attribute: "Weekly Frequency", coef: 0.617, pval: 0.000, sig: "***", wtp: 17.1 },
+  { attribute: "Monthly Frequency", coef: 0.336, pval: 0.005, sig: "**", wtp: 9.3 },
+  { attribute: "2-Hour Session", coef: 0.185, pval: 0.059, sig: "", wtp: 5.1 },
+  { attribute: "4-Hour Session", coef: 0.213, pval: 0.037, sig: "*", wtp: 5.9 },
+  { attribute: "Local Area (12km)", coef: 0.059, pval: 0.712, sig: "", wtp: 1.6 },
+  { attribute: "Wider Community (50+km)", coef: -0.509, pval: 0.000, sig: "***", wtp: -14.1 }
+];
+
+/****************************************************
+ * 3) BENEFIT / COST ASSUMPTIONS
+ ****************************************************/
+// Example: 10,000 AUD benefit per 1% uptake
+const benefitPerPercent = 10000;
+
+/****************************************************
+ * 4) LOAD WTP RESULTS TABLE WHEN WTP TAB IS OPENED
+ ****************************************************/
+function loadWTPResults() {
+  const wtpBody = document.getElementById("wtpBody");
+  wtpBody.innerHTML = "";
+  wtpData.forEach(item => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.attribute}</td>
+      <td>${item.coef.toFixed(3)}</td>
+      <td>${item.pval.toFixed(3)}</td>
+      <td>${item.sig}</td>
+      <td>${item.wtp.toFixed(1)}</td>
+    `;
+    wtpBody.appendChild(row);
+  });
+}
+
+/****************************************************
+ * 5) COST SLIDER LABEL
+ ****************************************************/
+function updateCostDisplay(val) {
+  document.getElementById("costLabel").textContent = val;
+}
+
+/****************************************************
+ * 6) SCENARIO MANAGEMENT
+ ****************************************************/
+let scenarioList = [];
+
+function buildScenarioFromInputs() {
+  const state = document.getElementById("state_select").value;
+  const adjustCosts = document.getElementById("adjustCosts").value;
+  const cost_val = parseInt(document.getElementById("costSlider").value, 10);
+
+  const localCheck = document.getElementById("localCheck").checked;
+  const widerCheck = document.getElementById("widerCheck").checked;
+  const weeklyCheck = document.getElementById("weeklyCheck").checked;
+  const monthlyCheck = document.getElementById("monthlyCheck").checked;
+  const virtualCheck = document.getElementById("virtualCheck").checked;
+  const hybridCheck = document.getElementById("hybridCheck").checked;
+  const twoHCheck = document.getElementById("twoHCheck").checked;
+  const fourHCheck = document.getElementById("fourHCheck").checked;
+  const commCheck = document.getElementById("commCheck").checked;
+  const psychCheck = document.getElementById("psychCheck").checked;
+  const vrCheck = document.getElementById("vrCheck").checked;
+
+  if (localCheck && widerCheck) {
+    alert("You cannot select both Local Area and Wider Community in one scenario.");
+    return null;
+  }
+  if (weeklyCheck && monthlyCheck) {
+    alert("You cannot select both Weekly and Monthly in one scenario.");
+    return null;
+  }
+  if (twoHCheck && fourHCheck) {
+    alert("You cannot select both 2-Hour and 4-Hour sessions in one scenario.");
+    return null;
+  }
+  if (adjustCosts === "yes" && !state) {
+    alert("Please select a State if you choose to adjust costs for living.");
+    return null;
+  }
+
+  return {
+    name: "Scenario " + (scenarioList.length + 1),
+    state,
+    adjustCosts,
+    cost_val,
+    localCheck,
+    widerCheck,
+    weeklyCheck,
+    monthlyCheck,
+    virtualCheck,
+    hybridCheck,
+    twoHCheck,
+    fourHCheck,
+    commCheck,
+    psychCheck,
+    vrCheck
+  };
+}
+
+function saveScenario() {
+  const scenario = buildScenarioFromInputs();
+  if (!scenario) return;
+  scenarioList.push(scenario);
+  updateScenarioTable();
+  alert("Scenario saved successfully!");
+}
+
+function updateScenarioTable() {
+  const tb = document.querySelector("#scenarioTable tbody");
+  tb.innerHTML = "";
+  scenarioList.forEach(sc => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${sc.name}</td>
+      <td>${sc.state || "-"}</td>
+      <td>${sc.adjustCosts}</td>
+      <td>${sc.cost_val}</td>
+      <td>${sc.localCheck ? "Yes" : "No"}</td>
+      <td>${sc.widerCheck ? "Yes" : "No"}</td>
+      <td>${sc.weeklyCheck ? "Yes" : "No"}</td>
+      <td>${sc.monthlyCheck ? "Yes" : "No"}</td>
+      <td>${sc.virtualCheck ? "Yes" : "No"}</td>
+      <td>${sc.hybridCheck ? "Yes" : "No"}</td>
+      <td>${sc.twoHCheck ? "Yes" : "No"}</td>
+      <td>${sc.fourHCheck ? "Yes" : "No"}</td>
+      <td>${sc.commCheck ? "Yes" : "No"}</td>
+      <td>${sc.psychCheck ? "Yes" : "No"}</td>
+      <td>${sc.vrCheck ? "Yes" : "No"}</td>
+    `;
+    tb.appendChild(row);
+  });
+}
+
+/****************************************************
+ * 7) OPEN SINGLE-SCENARIO WINDOW
+ ****************************************************/
+function openSingleScenario() {
+  const sc = buildScenarioFromInputs();
+  if (!sc) return;
+  openResultsWindow([sc], "Single Scenario Results");
+}
+
+/****************************************************
+ * 8) OPEN COMPARISON WINDOW
+ ****************************************************/
+function openComparison() {
+  if (scenarioList.length === 0) {
+    alert("No saved scenarios to compare.");
+    return;
+  }
+  openResultsWindow(scenarioList, "Compare Multiple Scenarios");
+}
+
+/****************************************************
+ * 9) MULTI-WINDOW RESULTS + PDF
+ ****************************************************/
+function openResultsWindow(scenarios, windowTitle) {
+  const w = window.open("", "_blank", "width=1400,height=800,scrollbars,resizable");
+  if (!w) {
+    alert("Please allow popups for the new window to open.");
+    return;
+  }
+
+  // Basic HTML
+  w.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8"/>
+      <title>${windowTitle}</title>
+      <style>
+        body {
+          margin: 20px;
+          font-family: Arial, sans-serif;
+          background: #f4f7fa;
+        }
+        h1, h2 {
+          text-align: center; 
+          color: #2c3e50;
+        }
+        .scenario-box {
+          background: #fff;
+          margin: 20px 0;
+          padding: 15px;
+          border-radius: 8px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        th, td {
+          border: 1px solid #ccc;
+          padding: 8px;
+        }
+        th {
+          background: #2980b9;
+          color: #fff;
+        }
+        .charts-container {
+          display: flex; 
+          flex-wrap: wrap; 
+          gap: 20px; 
+          margin-top: 20px;
+        }
+        .chart-box {
+          width: 300px; 
+          height: 300px; 
+          background: #f9f9f9;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          position: relative;
+        }
+        .buttons-row {
+          text-align: center;
+          margin: 20px 0;
+        }
+        button {
+          background: #2980b9;
+          color: #fff;
+          border: none;
+          padding: 10px 15px;
+          border-radius: 5px;
+          cursor: pointer;
+          margin: 0 10px;
+        }
+        button:hover {
+          background: #1f6391;
+        }
+        .loneliness-note {
+          background: #fff3db;
+          padding: 10px;
+          margin: 10px 0;
+          border-left: 4px solid #f39c12;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>${windowTitle}</h1>
+      <p class="loneliness-note">
+        This report shows main DCE probabilities plus separate analyses by loneliness categories (Not Lonely, Moderately Lonely, Severely Lonely).
+      </p>
+      <div id="resultsContainer"></div>
+      <div class="buttons-row">
+        <button onclick="downloadPDF()">Download PDF</button>
+      </div>
+
+      <!-- Chart.js & jsPDF in child window -->
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+      <script>
+        const scenariosData = ${JSON.stringify(scenarios)};
+        const finalCoefs = ${JSON.stringify(finalCoefficients)};
+        const costMultipliers = ${JSON.stringify(costOfLivingMultipliers)};
+        const benefitPerPercent = ${benefitPerPercent};
+
+        window.onload = function() {
+          buildScenarioViews();
+        };
+
+        function buildScenarioViews() {
+          const container = document.getElementById('resultsContainer');
+          scenariosData.forEach((sc, idx) => {
+            const box = document.createElement('div');
+            box.className = 'scenario-box';
+            const h2 = document.createElement('h2');
+            h2.textContent = sc.name;
+            box.appendChild(h2);
+
+            const table = document.createElement('table');
+            table.innerHTML = \`
+              <thead>
+                <tr><th>Attribute</th><th>Value</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>State</td><td>\${sc.state || '-'}</td></tr>
+                <tr><td>Adjust Costs?</td><td>\${sc.adjustCosts}</td></tr>
+                <tr><td>Base Cost (AUD)</td><td>\${sc.cost_val}</td></tr>
+                <tr><td>Local?</td><td>\${sc.localCheck}</td></tr>
+                <tr><td>Wider?</td><td>\${sc.widerCheck}</td></tr>
+                <tr><td>Weekly?</td><td>\${sc.weeklyCheck}</td></tr>
+                <tr><td>Monthly?</td><td>\${sc.monthlyCheck}</td></tr>
+                <tr><td>Virtual?</td><td>\${sc.virtualCheck}</td></tr>
+                <tr><td>Hybrid?</td><td>\${sc.hybridCheck}</td></tr>
+                <tr><td>2-Hour?</td><td>\${sc.twoHCheck}</td></tr>
+                <tr><td>4-Hour?</td><td>\${sc.fourHCheck}</td></tr>
+                <tr><td>Comm Engagement?</td><td>\${sc.commCheck}</td></tr>
+                <tr><td>Psych Counselling?</td><td>\${sc.psychCheck}</td></tr>
+                <tr><td>VR?</td><td>\${sc.vrCheck}</td></tr>
+              </tbody>
+            \`;
+            box.appendChild(table);
+
+            // Calculate probabilities
+            const pMain = computeProbability(sc, finalCoefs.main);
+            const pNot = computeProbability(sc, finalCoefs.notLonely);
+            const pMod = computeProbability(sc, finalCoefs.moderatelyLonely);
+            const pSev = computeProbability(sc, finalCoefs.severelyLonely);
+
+            // Simple example cost/benefit
+            const totalBenefits = pMain * 100 * benefitPerPercent;
+            const totalCost = sc.cost_val * 1000; 
+            const netB = totalBenefits - totalCost;
+            const bcr = totalCost === 0 ? 0 : (totalBenefits / totalCost);
+
+            const infoP = document.createElement('p');
+            infoP.innerHTML = \`
+              <strong>Main Prob:</strong> \${(pMain*100).toFixed(2)}%<br/>
+              <strong>Not Lonely:</strong> \${(pNot*100).toFixed(2)}% |
+              <strong>Mod Lonely:</strong> \${(pMod*100).toFixed(2)}% |
+              <strong>Sev Lonely:</strong> \${(pSev*100).toFixed(2)}%<br/>
+              <strong>Est. Benefits:</strong> \$\${totalBenefits.toFixed(0)} |
+              <strong>Est. Cost:</strong> \$\${totalCost.toFixed(0)} |
+              <strong>Net Benefit:</strong> \$\${netB.toFixed(0)} |
+              <strong>BCR:</strong> \${bcr.toFixed(2)}
+            \`;
+            box.appendChild(infoP);
+
+            const chartWrap = document.createElement('div');
+            chartWrap.className = 'charts-container';
+            // 4 doughnut charts
+            chartWrap.appendChild(buildChartCanvas("main_" + idx));
+            chartWrap.appendChild(buildChartCanvas("not_" + idx));
+            chartWrap.appendChild(buildChartCanvas("mod_" + idx));
+            chartWrap.appendChild(buildChartCanvas("sev_" + idx));
+
+            box.appendChild(chartWrap);
+            container.appendChild(box);
+
+            // After dom append
+            initDoughnut("main_" + idx, "Main Probability", pMain);
+            initDoughnut("not_" + idx, "Not Lonely", pNot);
+            initDoughnut("mod_" + idx, "Moderately Lonely", pMod);
+            initDoughnut("sev_" + idx, "Severely Lonely", pSev);
+          });
+        }
+
+        function buildChartCanvas(id) {
+          const div = document.createElement('div');
+          div.className = 'chart-box';
+          const cnv = document.createElement('canvas');
+          cnv.id = id;
+          div.appendChild(cnv);
+          return div;
+        }
+
+        function initDoughnut(canvasId, label, prob) {
+          const ctx = document.getElementById(canvasId).getContext('2d');
+          new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: ["Uptake Probability", "Remaining"],
+              datasets: [{
+                data: [prob, 1-prob],
+                backgroundColor: pickColour(prob),
+                borderColor: "#fff",
+                borderWidth: 1
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: "bottom" },
+                title: {
+                  display: true,
+                  text: label + " (" + (prob*100).toFixed(2) + "%)"
                 }
-            },
-            title: {
-                display: true,
-                text: 'Predicted Probability of Program Uptake',
-                font: {
-                    size: 18
-                },
-                color: '#2c3e50'
+              }
             }
+          });
         }
-    }
-});
 
-// Initialize Chart.js with Bar Chart for Cost-Benefit Analysis
-let cbaCtx = document.getElementById('cbaChart').getContext('2d');
-let cbaChart = new Chart(cbaCtx, {
-    type: 'bar',
-    data: {
-        labels: ['Total Costs', 'Total Benefits'],
-        datasets: [{
-            label: 'Amount (AUD)',
-            data: [0, 0],
-            backgroundColor: [
-                'rgba(231, 76, 60, 0.6)', // Red for Costs
-                'rgba(39, 174, 96, 0.6)'   // Green for Benefits
-            ],
-            borderColor: [
-                'rgba(231, 76, 60, 1)',
-                'rgba(39, 174, 96, 1)'
-            ],
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                beginAtZero: true
+        function pickColour(p) {
+          if (p < 0.3) return ["rgba(231,76,60,0.7)","rgba(236,240,241,0.3)"];
+          if (p < 0.7) return ["rgba(241,196,15,0.7)","rgba(236,240,241,0.3)"];
+          return ["rgba(39,174,96,0.7)","rgba(236,240,241,0.3)"];
+        }
+
+        function computeProbability(sc, coefs) {
+          let finalCost = sc.cost_val;
+          if (sc.adjustCosts === "yes" && sc.state && costMultipliers[sc.state]) {
+            finalCost = sc.cost_val * costMultipliers[sc.state];
+          }
+          const dist_local = sc.localCheck ? 1 : 0;
+          const dist_signif = sc.widerCheck ? 1 : 0;
+          const freq_weekly = sc.weeklyCheck ? 1 : 0;
+          const freq_monthly = sc.monthlyCheck ? 1 : 0;
+          const mode_virtual = sc.virtualCheck ? 1 : 0;
+          const mode_hybrid = sc.hybridCheck ? 1 : 0;
+          const dur_2hrs = sc.twoHCheck ? 1 : 0;
+          const dur_4hrs = sc.fourHCheck ? 1 : 0;
+          const type_comm = sc.commCheck ? 1 : 0;
+          const type_psych = sc.psychCheck ? 1 : 0;
+          const type_vr = sc.vrCheck ? 1 : 0;
+
+          const U_alt = coefs.ASC_mean
+            + coefs.type_comm * type_comm
+            + coefs.type_psych * type_psych
+            + coefs.type_vr * type_vr
+            + coefs.mode_virtual * mode_virtual
+            + coefs.mode_hybrid * mode_hybrid
+            + coefs.freq_weekly * freq_weekly
+            + coefs.freq_monthly * freq_monthly
+            + coefs.dur_2hrs * dur_2hrs
+            + coefs.dur_4hrs * dur_4hrs
+            + coefs.dist_local * dist_local
+            + coefs.dist_signif * dist_signif
+            + coefs.cost_cont * finalCost;
+
+          const exp_alt = Math.exp(U_alt);
+          const exp_opt = Math.exp(coefs.ASC_optout);
+          return exp_alt / (exp_alt + exp_opt);
+        }
+
+        function downloadPDF() {
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p','pt','a4');
+          pdf.setFontSize(14);
+          pdf.text("${windowTitle}", 40, 40);
+          let yOff = 60;
+
+          const scenarioDivs = document.getElementsByClassName("scenario-box");
+          for (let i=0; i<scenarioDivs.length; i++) {
+            if (i>0) pdf.addPage();
+            yOff = 40;
+            pdf.text(scenariosData[i].name, 40, yOff);
+            yOff += 15;
+
+            // Grab chart canvases
+            const mainCanvas = document.getElementById("main_" + i);
+            if (mainCanvas) {
+              const mainImg = mainCanvas.toDataURL("image/png");
+              pdf.addImage(mainImg, "PNG", 40, yOff, 180, 180);
             }
-        },
-        plugins: {
-            legend: {
-                display: false
-            },
-            title: {
-                display: true,
-                text: 'Cost-Benefit Analysis',
-                font: {
-                    size: 18
-                },
-                color: '#2c3e50'
+            const notCanvas = document.getElementById("not_" + i);
+            if (notCanvas) {
+              const notImg = notCanvas.toDataURL("image/png");
+              pdf.addImage(notImg, "PNG", 240, yOff, 180, 180);
             }
-        }
-    }
-});
-
-// Function to calculate predicted probability and update the charts and tables
-function calculateProbability() {
-    // Get values from the form
-    const category = document.getElementById('loneliness_category').value;
-    const state = document.getElementById('state_select').value;
-    const adjustCosts = document.getElementById('adjust_costs').value;
-    const cost_cont = parseFloat(document.getElementById('cost_cont').value);
-    const dist_signif = parseFloat(document.getElementById('dist_signif').value);
-    const dist_local = parseFloat(document.getElementById('dist_local').value);
-    const freq_monthly = parseFloat(document.getElementById('freq_monthly').value);
-    const freq_weekly = parseFloat(document.getElementById('freq_weekly').value);
-    const mode_virtual = parseFloat(document.getElementById('mode_virtual').value);
-    const mode_hybrid = parseFloat(document.getElementById('mode_hybrid').value);
-    const dur_2hrs = parseFloat(document.getElementById('dur_2hrs').value);
-    const dur_4hrs = parseFloat(document.getElementById('dur_4hrs').value);
-    const type_comm = parseFloat(document.getElementById('type_comm').value);
-    const type_psych = parseFloat(document.getElementById('type_psych').value);
-    const type_vr = parseFloat(document.getElementById('type_vr').value);
-
-    // Validate selections
-    if (!category) {
-        alert("Please select a loneliness category.");
-        return;
-    }
-
-    // Validate that only one duration is selected
-    if (dur_2hrs === 1 && dur_4hrs === 1) {
-        alert("Please select only one duration: either 2 Hours or 4 Hours.");
-        return;
-    }
-
-    // Validate that only one frequency is selected
-    if (freq_monthly === 1 && freq_weekly === 1) {
-        alert("Please select only one frequency: either Monthly or Weekly.");
-        return;
-    }
-
-    // Validate that only one accessibility option is selected
-    if (dist_local === 1 && dist_signif === 1) {
-        alert("Please select only one accessibility option: either Local Area Accessibility or Low Accessibility.");
-        return;
-    }
-
-    // Validate that if 'Adjust Costs for Living Expenses' is 'Yes', a state is selected
-    if (adjustCosts === 'yes' && !state) {
-        alert("Please select a state if you choose to adjust costs for living expenses.");
-        return;
-    }
-
-    // Select the appropriate coefficients based on category
-    let selectedCoefficients = coefficients.overall; // Default to overall
-
-    if (category in coefficients.categories) {
-        selectedCoefficients = coefficients.categories[category];
-    } else {
-        alert("Selected loneliness category is invalid.");
-        return;
-    }
-
-    // Calculate U_alt1 with Cost-of-Living Adjustment
-    let adjusted_cost_cont = cost_cont; // Initialize adjusted cost_cont
-
-    if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
-        adjusted_cost_cont = cost_cont * costOfLivingMultipliers[state];
-    }
-
-    let U_alt1 = selectedCoefficients.ASC_alt1 +
-                selectedCoefficients.type_comm * type_comm +
-                selectedCoefficients.type_psych * type_psych +
-                selectedCoefficients.type_vr * type_vr +
-                selectedCoefficients.mode_virtual * mode_virtual +
-                selectedCoefficients.mode_hybrid * mode_hybrid +
-                selectedCoefficients.freq_weekly * freq_weekly +
-                selectedCoefficients.freq_monthly * freq_monthly +
-                selectedCoefficients.dur_2hrs * dur_2hrs +
-                selectedCoefficients.dur_4hrs * dur_4hrs +
-                selectedCoefficients.dist_local * dist_local +
-                selectedCoefficients.dist_signif * dist_signif +
-                selectedCoefficients.cost_cont * adjusted_cost_cont;
-
-    // Calculate U_optout
-    const U_optout = selectedCoefficients.ASC_optout;
-
-    // Calculate P_alt1 using the logistic function
-    const exp_U_alt1 = Math.exp(U_alt1);
-    const exp_U_optout = Math.exp(U_optout);
-    const P_alt1 = exp_U_alt1 / (exp_U_alt1 + exp_U_optout);
-
-    // Ensure P_alt1 is between 0 and 1
-    const P_final = Math.min(Math.max(P_alt1, 0), 1);
-
-    // Display the result with percentage formatting
-    document.getElementById('probability').innerText = (P_final * 100).toFixed(2) + '%';
-
-    // Update the Uptake Probability chart
-    probabilityChart.data.datasets[0].data = [P_final, 1 - P_final];
-
-    // Update the Uptake Probability chart color based on probability
-    if (P_final < 0.3) {
-        probabilityChart.data.datasets[0].backgroundColor = ['rgba(231, 76, 60, 0.6)', 'rgba(236, 240, 241, 0.3)']; // Red and Light Gray
-        probabilityChart.data.datasets[0].borderColor = ['rgba(231, 76, 60, 1)', 'rgba(236, 240, 241, 1)'];
-    } else if (P_final >= 0.3 && P_final < 0.7) {
-        probabilityChart.data.datasets[0].backgroundColor = ['rgba(241, 196, 15, 0.6)', 'rgba(236, 240, 241, 0.3)']; // Yellow and Light Gray
-        probabilityChart.data.datasets[0].borderColor = ['rgba(241, 196, 15, 1)', 'rgba(236, 240, 241, 1)'];
-    } else {
-        probabilityChart.data.datasets[0].backgroundColor = ['rgba(39, 174, 96, 0.6)', 'rgba(236, 240, 241, 0.3)']; // Green and Light Gray
-        probabilityChart.data.datasets[0].borderColor = ['rgba(39, 174, 96, 1)', 'rgba(236, 240, 241, 1)'];
-    }
-
-    // Update the Uptake Probability chart
-    probabilityChart.update();
-
-    // Update Interpretations Section with Brief Interpretations
-    const interpretationsDiv = document.getElementById('interpretations');
-    interpretationsDiv.innerHTML = generateInterpretations(P_final);
-
-    // Update Program Package Display
-    const packageList = document.getElementById('packageList');
-    packageList.innerHTML = generateProgramPackage();
-
-    // Show or hide download buttons based on package selection
-    const downloadPackageBtn = document.getElementById('downloadPackageBtn');
-    const downloadChartBtn = document.getElementById('downloadChartBtn');
-    if (packageList.children.length > 0) {
-        downloadPackageBtn.style.display = 'inline-block';
-        downloadChartBtn.style.display = 'inline-block';
-    } else {
-        downloadPackageBtn.style.display = 'none';
-        downloadChartBtn.style.display = 'none';
-    }
-
-    // Calculate and Display Costs
-    const costResults = calculateTotalCost(state, adjustCosts);
-    displayCosts(costResults);
-
-    // Calculate and Display Benefits
-    const benefits = calculateBenefits(P_final);
-    displayBenefits(benefits);
-
-    // Display Cost-Benefit Analysis
-    displayCBA(costResults.grandTotal, benefits);
-
-    // Update CBA Chart
-    updateCBACChart(costResults.grandTotal, benefits);
-}
-
-// Function to generate brief interpretations based on probability
-function generateInterpretations(probability) {
-    let interpretation = '';
-
-    if (probability < 0.3) {
-        interpretation = `<p>Your selected support programs have a low probability of uptake (<30%). This suggests that the current configuration may not be attractive to older adults. Consider revising the program features to better meet the needs and preferences of your target population.</p>`;
-    } else if (probability >= 0.3 && probability < 0.7) {
-        interpretation = `<p>Your selected support programs have a moderate probability of uptake (30%-70%). While there is potential interest, there is room for improvement. Enhancing certain program features could increase engagement and participation rates.</p>`;
-    } else {
-        interpretation = `<p>Your selected support programs have a high probability of uptake (>70%). This indicates strong acceptance and interest from older adults. Maintaining and promoting these program features is recommended to maximize impact.</p>`;
-    }
-
-    return interpretation;
-}
-
-// Function to generate program package list with user-friendly labels
-function generateProgramPackage() {
-    const packageList = [];
-    const form = document.getElementById('decisionForm');
-    const selects = form.getElementsByTagName('select');
-    for (let select of selects) {
-        if (select.id === 'state_select' || select.id === 'adjust_costs' || select.id === 'loneliness_category') {
-            continue; // Skip state, adjust costs, and loneliness category selections
-        }
-        if (select.value === "1") {
-            let label = select.previousElementSibling.innerText;
-            label = label.replace(':', '').trim();
-            const value = select.options[select.selectedIndex].innerText;
-            packageList.push(`${label}: ${value}`);
-        }
-    }
-    // Generate HTML list items
-    let listItems = '';
-    packageList.forEach(item => {
-        listItems += `<li>${item}</li>`;
-    });
-    return listItems;
-}
-
-// Function to calculate total cost with state adjustment
-function calculateTotalCost(state, adjustCosts) {
-    const selectedAttributes = getSelectedAttributes();
-    let totalCost = {
-        personnel: 0,
-        materials: 0,
-        technology: 0,
-        facility: 0,
-        marketing: 0,
-        training: 0,
-        miscellaneous: 0
-    };
-    
-    selectedAttributes.forEach(attr => {
-        const costs = costData[attr];
-        for (let key in totalCost) {
-            if (costs[key]) {
-                totalCost[key] += costs[key];
+            yOff += 200;
+            const modCanvas = document.getElementById("mod_" + i);
+            if (modCanvas) {
+              const modImg = modCanvas.toDataURL("image/png");
+              pdf.addImage(modImg, "PNG", 40, yOff, 180, 180);
             }
+            const sevCanvas = document.getElementById("sev_" + i);
+            if (sevCanvas) {
+              const sevImg = sevCanvas.toDataURL("image/png");
+              pdf.addImage(sevImg, "PNG", 240, yOff, 180, 180);
+            }
+            yOff += 220;
+          }
+
+          pdf.save("LonelyLessAustralia_Results.pdf");
         }
-    });
+      </script>
+    </body>
+    </html>
+  `);
 
-    // Calculate Grand Total before adjustment
-    let grandTotal = 0;
-    for (let key in totalCost) {
-        grandTotal += totalCost[key];
-    }
-
-    // Apply Cost-of-Living Adjustment if applicable
-    if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
-        grandTotal = grandTotal * costOfLivingMultipliers[state];
-    }
-
-    return { totalCost, grandTotal };
+  w.document.close();
 }
-
-// Helper Function to Get Selected Attributes
-function getSelectedAttributes() {
-    const form = document.getElementById('decisionForm');
-    const selects = form.getElementsByTagName('select');
-    const attributes = [];
-    for (let select of selects) {
-        if (select.id === 'state_select' || select.id === 'adjust_costs' || select.id === 'loneliness_category') {
-            continue; // Skip state, adjust costs, and loneliness category selections
-        }
-        if (select.value === "1") {
-            attributes.push(select.id);
-        }
-    }
-    return attributes;
-}
-
-// Function to calculate benefits based on probability
-function calculateBenefits(probability) {
-    const benefit = probability * 100 * benefitPerPercent;
-    return benefit;
-}
-
-// Function to display cost information
-function displayCosts(costResults) {
-    const { totalCost, grandTotal } = costResults;
-    const costList = document.getElementById('costList');
-    const totalCostDisplay = document.getElementById('totalCost');
-    
-    // Clear Previous Costs
-    costList.innerHTML = '';
-    
-    // Populate Cost Components
-    for (let key in totalCost) {
-        if (totalCost[key] > 0) {
-            const listItem = document.createElement('li');
-            listItem.innerText = `${capitalizeFirstLetter(key)}: \$${totalCost[key].toLocaleString()}`;
-            costList.appendChild(listItem);
-        }
-    }
-    
-    // Display Grand Total
-    totalCostDisplay.innerText = grandTotal.toLocaleString();
-}
-
-// Function to display benefits
-function displayBenefits(benefits) {
-    const costInformation = document.getElementById('costInformation');
-    
-    // Check if Benefits Section Exists, else Create
-    let benefitsSection = document.getElementById('benefits');
-    if (!benefitsSection) {
-        benefitsSection = document.createElement('div');
-        benefitsSection.id = 'benefits';
-        benefitsSection.innerHTML = `
-            <h3>Benefit Analysis:</h3>
-            <p><strong>Total Estimated Benefits:</strong> <span id="totalBenefits">--</span> AUD</p>
-        `;
-        costInformation.appendChild(benefitsSection);
-    }
-    
-    // Update Benefits
-    document.getElementById('totalBenefits').innerText = benefits.toLocaleString();
-}
-
-// Function to display Cost-Benefit Analysis
-function displayCBA(totalCost, benefits) {
-    const costInformation = document.getElementById('costInformation');
-    
-    // Check if CBA Section Exists, else Create
-    let cbaSection = document.getElementById('cba');
-    if (!cbaSection) {
-        cbaSection = document.createElement('div');
-        cbaSection.id = 'cba';
-        cbaSection.innerHTML = `
-            <h3>Cost-Benefit Analysis:</h3>
-            <p><strong>Net Benefit:</strong> <span id="netBenefit">--</span> AUD</p>
-            <p><strong>Benefit-Cost Ratio:</strong> <span id="bcr">--</span></p>
-        `;
-        costInformation.appendChild(cbaSection);
-    }
-    
-    // Calculate Net Benefit and Benefit-Cost Ratio
-    const netBenefit = benefits - totalCost;
-    const bcr = benefits / totalCost;
-    
-    // Update CBA
-    document.getElementById('netBenefit').innerText = netBenefit.toLocaleString();
-    document.getElementById('bcr').innerText = bcr.toFixed(2);
-}
-
-// Function to capitalize first letter
-function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-// Function to download program package as a text file
-function downloadPackage() {
-    const packageList = document.getElementById('packageList');
-    if (packageList.children.length === 0) {
-        alert("No program package selected to download.");
-        return;
-    }
-
-    let packageText = 'Selected Program Package:\n';
-    for (let li of packageList.children) {
-        packageText += li.innerText + '\n';
-    }
-
-    const blob = new Blob([packageText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'Program_Package.txt';
-    a.click();
-    URL.revokeObjectURL(url);
-
-    alert("Program Package downloaded successfully!");
-}
-
-// Function to download the Uptake Probability chart as an image
-function downloadChart() {
-    const canvas = document.getElementById('probabilityChart');
-    const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png');
-    link.download = 'Uptake_Probability_Chart.png';
-    link.click();
-    
-    alert("Uptake Probability chart downloaded successfully!");
-}
-
-// Function to download CBA report as PDF
-function downloadCBAPDF() {
-    const state = document.getElementById('state_select').value;
-    const adjustCosts = document.getElementById('adjust_costs').value;
-    const category = document.getElementById('loneliness_category').value;
-    const { grandTotal } = calculateTotalCost(state, adjustCosts);
-    const P_final = parseFloat((document.getElementById('probability').innerText).replace('%', '')) / 100;
-    const benefits = calculateBenefits(P_final);
-    const netBenefit = benefits - grandTotal;
-    const bcr = benefits / grandTotal;
-
-    // Initialize jsPDF
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    doc.setFontSize(16);
-    doc.text("AussieConnect Plus - Cost-Benefit Analysis Report", 10, 20);
-    doc.setFontSize(12);
-    doc.text(`Selected Loneliness Category: ${capitalizeFirstLetter(category.replace('_', ' '))}`, 10, 30);
-    doc.text(`Selected State: ${state ? state : 'N/A'}`, 10, 40);
-    doc.text(`Adjust Costs for Living Expenses: ${adjustCosts === 'yes' ? 'Yes' : 'No'}`, 10, 50);
-    doc.text(`Total Estimated Cost: $${grandTotal.toLocaleString()} AUD`, 10, 60);
-    doc.text(`Total Estimated Benefits: $${benefits.toLocaleString()} AUD`, 10, 70);
-    doc.text(`Net Benefit: $${netBenefit.toLocaleString()} AUD`, 10, 80);
-    doc.text(`Benefit-Cost Ratio: ${bcr.toFixed(2)}`, 10, 90);
-    
-    doc.save('CBA_Report.pdf');
-
-    alert("Cost-Benefit Analysis report downloaded successfully!");
-}
-
-// Function to update CBA Chart
-function updateCBACChart(totalCost, benefits) {
-    cbaChart.data.datasets[0].data = [totalCost, benefits];
-    cbaChart.update();
-}
-
-// Function to open results by loneliness categories in a new window
-function openCategoryResults() {
-    const categoryResults = {
-        not_lonely: {},
-        moderately_lonely: {},
-        severely_lonely: {}
-    };
-
-    // Iterate through each category and calculate probabilities
-    for (let category in coefficients.categories) {
-        // Get user selections
-        const state = document.getElementById('state_select').value;
-        const adjustCosts = document.getElementById('adjust_costs').value;
-        const cost_cont = parseFloat(document.getElementById('cost_cont').value);
-        const dist_signif = parseFloat(document.getElementById('dist_signif').value);
-        const dist_local = parseFloat(document.getElementById('dist_local').value);
-        const freq_monthly = parseFloat(document.getElementById('freq_monthly').value);
-        const freq_weekly = parseFloat(document.getElementById('freq_weekly').value);
-        const mode_virtual = parseFloat(document.getElementById('mode_virtual').value);
-        const mode_hybrid = parseFloat(document.getElementById('mode_hybrid').value);
-        const dur_2hrs = parseFloat(document.getElementById('dur_2hrs').value);
-        const dur_4hrs = parseFloat(document.getElementById('dur_4hrs').value);
-        const type_comm = parseFloat(document.getElementById('type_comm').value);
-        const type_psych = parseFloat(document.getElementById('type_psych').value);
-        const type_vr = parseFloat(document.getElementById('type_vr').value);
-
-        // Calculate U_alt1 with Cost-of-Living Adjustment
-        let selectedCoefficients = coefficients.categories[category];
-
-        let adjusted_cost_cont = cost_cont; // Initialize adjusted cost_cont
-
-        if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
-            adjusted_cost_cont = cost_cont * costOfLivingMultipliers[state];
-        }
-
-        let U_alt1 = selectedCoefficients.ASC_alt1 +
-                    selectedCoefficients.type_comm * type_comm +
-                    selectedCoefficients.type_psych * type_psych +
-                    selectedCoefficients.type_vr * type_vr +
-                    selectedCoefficients.mode_virtual * mode_virtual +
-                    selectedCoefficients.mode_hybrid * mode_hybrid +
-                    selectedCoefficients.freq_weekly * freq_weekly +
-                    selectedCoefficients.freq_monthly * freq_monthly +
-                    selectedCoefficients.dur_2hrs * dur_2hrs +
-                    selectedCoefficients.dur_4hrs * dur_4hrs +
-                    selectedCoefficients.dist_local * dist_local +
-                    selectedCoefficients.dist_signif * dist_signif +
-                    selectedCoefficients.cost_cont * adjusted_cost_cont;
-
-        // Calculate U_optout
-        const U_optout = selectedCoefficients.ASC_optout;
-
-        // Calculate P_alt1 using the logistic function
-        const exp_U_alt1 = Math.exp(U_alt1);
-        const exp_U_optout = Math.exp(U_optout);
-        const P_alt1 = exp_U_alt1 / (exp_U_alt1 + exp_U_optout);
-
-        // Ensure P_alt1 is between 0 and 1
-        const P_final = Math.min(Math.max(P_alt1, 0), 1);
-
-        // Store results
-        categoryResults[category] = (P_final * 100).toFixed(2) + '%';
-    }
-
-    // Open new window and display the results
-    const resultWindow = window.open("", "CategoryResults", "width=600,height=400");
-    resultWindow.document.write(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <title>Results by Loneliness Category</title>
-            <link rel="stylesheet" href="styles.css">
-        </head>
-        <body>
-            <div class="container">
-                <header>
-                    <h1>Predicted Uptake Probability by Loneliness Category</h1>
-                </header>
-                <section>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Loneliness Category</th>
-                                <th>Predicted Uptake Probability</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Not Lonely</td>
-                                <td>${categoryResults.not_lonely}</td>
-                            </tr>
-                            <tr>
-                                <td>Moderately Lonely</td>
-                                <td>${categoryResults.moderately_lonely}</td>
-                            </tr>
-                            <tr>
-                                <td>Severely Lonely</td>
-                                <td>${categoryResults.severely_lonely}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </section>
-            </div>
-        </body>
-        </html>
-    `);
-}
-
-// Function to open WTP in a new window
-function openWTP() {
-    const state = document.getElementById('state_select').value;
-    const adjustCosts = document.getElementById('adjust_costs').value;
-    const category = document.getElementById('loneliness_category').value;
-    const cost_cont = parseFloat(document.getElementById('cost_cont').value);
-    const dist_signif = parseFloat(document.getElementById('dist_signif').value);
-    const dist_local = parseFloat(document.getElementById('dist_local').value);
-    const freq_monthly = parseFloat(document.getElementById('freq_monthly').value);
-    const freq_weekly = parseFloat(document.getElementById('freq_weekly').value);
-    const mode_virtual = parseFloat(document.getElementById('mode_virtual').value);
-    const mode_hybrid = parseFloat(document.getElementById('mode_hybrid').value);
-    const dur_2hrs = parseFloat(document.getElementById('dur_2hrs').value);
-    const dur_4hrs = parseFloat(document.getElementById('dur_4hrs').value);
-    const type_comm = parseFloat(document.getElementById('type_comm').value);
-    const type_psych = parseFloat(document.getElementById('type_psych').value);
-    const type_vr = parseFloat(document.getElementById('type_vr').value);
-
-    if (!category) {
-        alert("Please select a loneliness category.");
-        return;
-    }
-
-    // Select the appropriate coefficients based on category
-    let selectedCoefficients = coefficients.overall; // Default to overall
-
-    if (category in coefficients.categories) {
-        selectedCoefficients = coefficients.categories[category];
-    } else {
-        alert("Selected loneliness category is invalid.");
-        return;
-    }
-
-    // Calculate WTP for each attribute (only for significant attributes)
-    // WTP = Coef / |cost_cont_coef|
-    const cost_coef = selectedCoefficients.cost_cont;
-
-    let WTP = {};
-
-    // List of attributes for WTP calculation (exclude constants and cost)
-    const attributes = ['type_comm', 'type_psych', 'type_vr', 'mode_virtual', 'mode_hybrid', 'freq_weekly', 'freq_monthly', 'dur_2hrs', 'dur_4hrs', 'dist_local', 'dist_signif'];
-
-    attributes.forEach(attr => {
-        const coef = selectedCoefficients[attr];
-        if (coef !== undefined && coef !== 0) {
-            WTP[attr] = (coef / Math.abs(cost_coef)).toFixed(2);
-        }
-    });
-
-    // Open new window and display the WTP
-    const wtpWindow = window.open("", "WTPCalculation", "width=600,height=400");
-    wtpWindow.document.write(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <title>Willingness To Pay (WTP) Report</title>
-            <link rel="stylesheet" href="styles.css">
-        </head>
-        <body>
-            <div class="container">
-                <header>
-                    <h1>Willingness To Pay (WTP) Report</h1>
-                </header>
-                <section>
-                    <p><strong>Selected Loneliness Category:</strong> ${capitalizeFirstLetter(category.replace('_', ' '))}</p>
-                    <p><strong>Selected State:</strong> ${state ? state : 'N/A'}</p>
-                    <p><strong>Adjust Costs for Living Expenses:</strong> ${adjustCosts === 'yes' ? 'Yes' : 'No'}</p>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Attribute</th>
-                                <th>WTP (AUD)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(WTP).map(attr => `
-                                <tr>
-                                    <td>${formatAttributeName(attr)}</td>
-                                    <td>$${WTP[attr]}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </section>
-            </div>
-        </body>
-        </html>
-    `);
-}
-
-// Helper function to format attribute names
-function formatAttributeName(attr) {
-    switch(attr) {
-        case 'type_comm':
-            return 'Community Engagement';
-        case 'type_psych':
-            return 'Psychological Counselling';
-        case 'type_vr':
-            return 'Virtual Reality';
-        case 'mode_virtual':
-            return 'Virtual Mode';
-        case 'mode_hybrid':
-            return 'Hybrid Mode';
-        case 'freq_weekly':
-            return 'Weekly Frequency';
-        case 'freq_monthly':
-            return 'Monthly Frequency';
-        case 'dur_2hrs':
-            return '2-hour Duration';
-        case 'dur_4hrs':
-            return '4-hour Duration';
-        case 'dist_local':
-            return 'Local Area Accessibility';
-        case 'dist_signif':
-            return 'Wider Community Accessibility';
-        default:
-            return attr;
-    }
-}
-
-// Function to capitalize first letter
-function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-// Function to open results by loneliness categories in a new window
-function openCategoryResults() {
-    const categoryResults = {
-        not_lonely: {},
-        moderately_lonely: {},
-        severely_lonely: {}
-    };
-
-    // Iterate through each category and calculate probabilities
-    for (let category in coefficients.categories) {
-        // Get user selections
-        const state = document.getElementById('state_select').value;
-        const adjustCosts = document.getElementById('adjust_costs').value;
-        const cost_cont = parseFloat(document.getElementById('cost_cont').value);
-        const dist_signif = parseFloat(document.getElementById('dist_signif').value);
-        const dist_local = parseFloat(document.getElementById('dist_local').value);
-        const freq_monthly = parseFloat(document.getElementById('freq_monthly').value);
-        const freq_weekly = parseFloat(document.getElementById('freq_weekly').value);
-        const mode_virtual = parseFloat(document.getElementById('mode_virtual').value);
-        const mode_hybrid = parseFloat(document.getElementById('mode_hybrid').value);
-        const dur_2hrs = parseFloat(document.getElementById('dur_2hrs').value);
-        const dur_4hrs = parseFloat(document.getElementById('dur_4hrs').value);
-        const type_comm = parseFloat(document.getElementById('type_comm').value);
-        const type_psych = parseFloat(document.getElementById('type_psych').value);
-        const type_vr = parseFloat(document.getElementById('type_vr').value);
-
-        // Calculate U_alt1 with Cost-of-Living Adjustment
-        let selectedCoefficients = coefficients.categories[category];
-
-        let adjusted_cost_cont = cost_cont; // Initialize adjusted cost_cont
-
-        if (adjustCosts === 'yes' && state && costOfLivingMultipliers[state]) {
-            adjusted_cost_cont = cost_cont * costOfLivingMultipliers[state];
-        }
-
-        let U_alt1 = selectedCoefficients.ASC_alt1 +
-                    selectedCoefficients.type_comm * type_comm +
-                    selectedCoefficients.type_psych * type_psych +
-                    selectedCoefficients.type_vr * type_vr +
-                    selectedCoefficients.mode_virtual * mode_virtual +
-                    selectedCoefficients.mode_hybrid * mode_hybrid +
-                    selectedCoefficients.freq_weekly * freq_weekly +
-                    selectedCoefficients.freq_monthly * freq_monthly +
-                    selectedCoefficients.dur_2hrs * dur_2hrs +
-                    selectedCoefficients.dur_4hrs * dur_4hrs +
-                    selectedCoefficients.dist_local * dist_local +
-                    selectedCoefficients.dist_signif * dist_signif +
-                    selectedCoefficients.cost_cont * adjusted_cost_cont;
-
-        // Calculate U_optout
-        const U_optout = selectedCoefficients.ASC_optout;
-
-        // Calculate P_alt1 using the logistic function
-        const exp_U_alt1 = Math.exp(U_alt1);
-        const exp_U_optout = Math.exp(U_optout);
-        const P_alt1 = exp_U_alt1 / (exp_U_alt1 + exp_U_optout);
-
-        // Ensure P_alt1 is between 0 and 1
-        const P_final = Math.min(Math.max(P_alt1, 0), 1);
-
-        // Store results
-        categoryResults[category] = (P_final * 100).toFixed(2) + '%';
-    }
-
-    // Open new window and display the results
-    const resultWindow = window.open("", "CategoryResults", "width=600,height=400");
-    resultWindow.document.write(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <title>Results by Loneliness Category</title>
-            <link rel="stylesheet" href="styles.css">
-        </head>
-        <body>
-            <div class="container">
-                <header>
-                    <h1>Predicted Uptake Probability by Loneliness Category</h1>
-                </header>
-                <section>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Loneliness Category</th>
-                                <th>Predicted Uptake Probability</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Not Lonely</td>
-                                <td>${categoryResults.not_lonely}</td>
-                            </tr>
-                            <tr>
-                                <td>Moderately Lonely</td>
-                                <td>${categoryResults.moderately_lonely}</td>
-                            </tr>
-                            <tr>
-                                <td>Severely Lonely</td>
-                                <td>${categoryResults.severely_lonely}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </section>
-            </div>
-        </body>
-        </html>
-    `);
-}
-
-// Function to open WTP in a new window
-function openWTP() {
-    const state = document.getElementById('state_select').value;
-    const adjustCosts = document.getElementById('adjust_costs').value;
-    const category = document.getElementById('loneliness_category').value;
-    const cost_cont = parseFloat(document.getElementById('cost_cont').value);
-    const dist_signif = parseFloat(document.getElementById('dist_signif').value);
-    const dist_local = parseFloat(document.getElementById('dist_local').value);
-    const freq_monthly = parseFloat(document.getElementById('freq_monthly').value);
-    const freq_weekly = parseFloat(document.getElementById('freq_weekly').value);
-    const mode_virtual = parseFloat(document.getElementById('mode_virtual').value);
-    const mode_hybrid = parseFloat(document.getElementById('mode_hybrid').value);
-    const dur_2hrs = parseFloat(document.getElementById('dur_2hrs').value);
-    const dur_4hrs = parseFloat(document.getElementById('dur_4hrs').value);
-    const type_comm = parseFloat(document.getElementById('type_comm').value);
-    const type_psych = parseFloat(document.getElementById('type_psych').value);
-    const type_vr = parseFloat(document.getElementById('type_vr').value);
-
-    if (!category) {
-        alert("Please select a loneliness category.");
-        return;
-    }
-
-    // Select the appropriate coefficients based on category
-    let selectedCoefficients = coefficients.overall; // Default to overall
-
-    if (category in coefficients.categories) {
-        selectedCoefficients = coefficients.categories[category];
-    } else {
-        alert("Selected loneliness category is invalid.");
-        return;
-    }
-
-    // Calculate WTP for each attribute (only for significant attributes)
-    // WTP = Coef / |cost_cont_coef|
-    const cost_coef = selectedCoefficients.cost_cont;
-
-    let WTP = {};
-
-    // List of attributes for WTP calculation (exclude constants and cost)
-    const attributes = ['type_comm', 'type_psych', 'type_vr', 'mode_virtual', 'mode_hybrid', 'freq_weekly', 'freq_monthly', 'dur_2hrs', 'dur_4hrs', 'dist_local', 'dist_signif'];
-
-    attributes.forEach(attr => {
-        const coef = selectedCoefficients[attr];
-        if (coef !== undefined && coef !== 0) {
-            WTP[attr] = (coef / Math.abs(cost_coef)).toFixed(2);
-        }
-    });
-
-    // Open new window and display the WTP
-    const wtpWindow = window.open("", "WTPCalculation", "width=600,height=400");
-    wtpWindow.document.write(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <title>Willingness To Pay (WTP) Report</title>
-            <link rel="stylesheet" href="styles.css">
-        </head>
-        <body>
-            <div class="container">
-                <header>
-                    <h1>Willingness To Pay (WTP) Report</h1>
-                </header>
-                <section>
-                    <p><strong>Selected Loneliness Category:</strong> ${capitalizeFirstLetter(category.replace('_', ' '))}</p>
-                    <p><strong>Selected State:</strong> ${state ? state : 'N/A'}</p>
-                    <p><strong>Adjust Costs for Living Expenses:</strong> ${adjustCosts === 'yes' ? 'Yes' : 'No'}</p>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Attribute</th>
-                                <th>WTP (AUD)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(WTP).map(attr => `
-                                <tr>
-                                    <td>${formatAttributeName(attr)}</td>
-                                    <td>$${WTP[attr]}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </section>
-            </div>
-        </body>
-        </html>
-    `);
-}
-
-// Function to format attribute names
-function formatAttributeName(attr) {
-    switch(attr) {
-        case 'type_comm':
-            return 'Community Engagement';
-        case 'type_psych':
-            return 'Psychological Counselling';
-        case 'type_vr':
-            return 'Virtual Reality';
-        case 'mode_virtual':
-            return 'Virtual Mode';
-        case 'mode_hybrid':
-            return 'Hybrid Mode';
-        case 'freq_weekly':
-            return 'Weekly Frequency';
-        case 'freq_monthly':
-            return 'Monthly Frequency';
-        case 'dur_2hrs':
-            return '2-hour Duration';
-        case 'dur_4hrs':
-            return '4-hour Duration';
-        case 'dist_local':
-            return 'Local Area Accessibility';
-        case 'dist_signif':
-            return 'Wider Community Accessibility';
-        default:
-            return attr;
-    }
-}
-
-// Function to download CBA report as PDF
-function downloadCBAPDF() {
-    const state = document.getElementById('state_select').value;
-    const adjustCosts = document.getElementById('adjust_costs').value;
-    const category = document.getElementById('loneliness_category').value;
-    const { grandTotal } = calculateTotalCost(state, adjustCosts);
-    const P_final = parseFloat((document.getElementById('probability').innerText).replace('%', '')) / 100;
-    const benefits = calculateBenefits(P_final);
-    const netBenefit = benefits - grandTotal;
-    const bcr = benefits / grandTotal;
-
-    // Initialize jsPDF
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    doc.setFontSize(16);
-    doc.text("AussieConnect Plus - Cost-Benefit Analysis Report", 10, 20);
-    doc.setFontSize(12);
-    doc.text(`Selected Loneliness Category: ${capitalizeFirstLetter(category.replace('_', ' '))}`, 10, 30);
-    doc.text(`Selected State: ${state ? state : 'N/A'}`, 10, 40);
-    doc.text(`Adjust Costs for Living Expenses: ${adjustCosts === 'yes' ? 'Yes' : 'No'}`, 10, 50);
-    doc.text(`Total Estimated Cost: $${grandTotal.toLocaleString()} AUD`, 10, 60);
-    doc.text(`Total Estimated Benefits: $${benefits.toLocaleString()} AUD`, 10, 70);
-    doc.text(`Net Benefit: $${netBenefit.toLocaleString()} AUD`, 10, 80);
-    doc.text(`Benefit-Cost Ratio: ${bcr.toFixed(2)}`, 10, 90);
-    
-    doc.save('CBA_Report.pdf');
-
-    alert("Cost-Benefit Analysis report downloaded successfully!");
-}
-
-// Function to update CBA Chart
-function updateCBACChart(totalCost, benefits) {
-    cbaChart.data.datasets[0].data = [totalCost, benefits];
-    cbaChart.update();
-}
-
-// Feedback Form Submission Handler
-document.getElementById('feedbackForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const feedback = document.getElementById('feedback').value.trim();
-    if (feedback) {
-        // For demonstration, we'll just alert the feedback. 
-        // In a real application, you'd send this to a server.
-        alert("Thank you for your feedback!");
-        document.getElementById('feedbackForm').reset();
-    } else {
-        alert("Please enter your feedback before submitting.");
-    }
-});
