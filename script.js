@@ -1,20 +1,20 @@
 /****************************************************************************
- * SCRIPT.JS
- * 1) Tab switching
+ * SCRIPT.JS - Single DCE model (no categories)
+ * 1) Tab navigation
  * 2) Range slider label
- * 3) Real DCE main-model coefficients
+ * 3) Main DCE coefficients
  * 4) WTP data for main model
- * 5) Probability chart & WTP chart for main model
+ * 5) Probability & WTP bar charts
  * 6) Scenario saving & multi-window PDF stubs
  * Author: Mesfin Genie, Newcastle Business School, The University of Newcastle, Australia
  ****************************************************************************/
 
-/** On page load, default to introduction. */
+/** Default to the Introduction tab on load */
 window.onload = function() {
   openTab('introTab', document.querySelector('.tablink'));
 };
 
-/** Tab switching function */
+/** Simple tab switcher */
 function openTab(tabId, btn) {
   const allTabs = document.getElementsByClassName("tabcontent");
   for (let i=0; i<allTabs.length; i++){
@@ -34,7 +34,7 @@ function updateCostDisplay(val){
 }
 
 /****************************************************************************
- * MAIN DCE COEFFICIENTS (No category breakdown)
+ * MAIN DCE COEFFICIENTS
  ****************************************************************************/
 const mainCoefficients = {
   ASC_mean: -0.112,
@@ -54,6 +54,12 @@ const mainCoefficients = {
   cost_cont: -0.036
 };
 
+/** Example interpretation of these WTP results (for Community Engagement):
+ * "Among the programme types, community engagement was the most highly valued, with a WTP of A$14.47 (SE=3.31, p<0.001).
+ *  This indicates older adults are willing to pay A$14.47 for programmes that foster social interaction and community 
+ *  connections, relative to the reference category of peer support."
+ */
+
 /****************************************************************************
  * COST-OF-LIVING MULTIPLIERS
  ****************************************************************************/
@@ -69,7 +75,7 @@ const costOfLivingMultipliers = {
 };
 
 /****************************************************************************
- * BUILD SCENARIO FROM CURRENT FORM
+ * BUILD SCENARIO FROM FORM
  ****************************************************************************/
 function buildScenarioFromInputs() {
   const state = document.getElementById("state_select").value;
@@ -88,7 +94,7 @@ function buildScenarioFromInputs() {
   const psychCheck = document.getElementById("psychCheck").checked;
   const vrCheck = document.getElementById("vrCheck").checked;
 
-  // Basic validations
+  // Validations
   if (localCheck && widerCheck) {
     alert("Cannot select both Local Area and Wider Community.");
     return null;
@@ -98,11 +104,11 @@ function buildScenarioFromInputs() {
     return null;
   }
   if (twoHCheck && fourHCheck) {
-    alert("Cannot select both 2-Hour and 4-Hour sessions simultaneously.");
+    alert("Cannot select both 2-Hour and 4-Hour at the same time.");
     return null;
   }
   if (adjustCosts === 'yes' && !state) {
-    alert("Please select a state if adjusting for cost-of-living.");
+    alert("Please select a state if cost-of-living is adjusted.");
     return null;
   }
 
@@ -125,114 +131,60 @@ function buildScenarioFromInputs() {
 }
 
 /****************************************************************************
- * CALCULATE PROBABILITY
+ * COMPUTE PREDICTED PROBABILITY
  ****************************************************************************/
-function computeProbability(sc, coefs){
-  let finalCost = sc.cost_val;
-  if (sc.adjustCosts === 'yes' && sc.state && costOfLivingMultipliers[sc.state]) {
-    finalCost *= costOfLivingMultipliers[sc.state];
+function computeProbability(scenario, coefs) {
+  let finalCost = scenario.cost_val;
+  if (scenario.adjustCosts === 'yes' && scenario.state && costOfLivingMultipliers[scenario.state]) {
+    finalCost *= costOfLivingMultipliers[scenario.state];
   }
-  
-  const dist_local = sc.localCheck ? 1 : 0;
-  const dist_signif = sc.widerCheck ? 1 : 0;
-  const freq_weekly = sc.weeklyCheck ? 1 : 0;
-  const freq_monthly = sc.monthlyCheck ? 1 : 0;
-  const mode_virtual = sc.virtualCheck ? 1 : 0;
-  const mode_hybrid = sc.hybridCheck ? 1 : 0;
-  const dur_2hrs = sc.twoHCheck ? 1 : 0;
-  const dur_4hrs = sc.fourHCheck ? 1 : 0;
-  const type_comm = sc.commCheck ? 1 : 0;
-  const type_psych = sc.psychCheck ? 1 : 0;
-  const type_vr = sc.vrCheck ? 1 : 0;
+
+  const dist_local = scenario.localCheck ? 1 : 0;
+  const dist_signif = scenario.widerCheck ? 1 : 0;
+  const freq_weekly = scenario.weeklyCheck ? 1 : 0;
+  const freq_monthly = scenario.monthlyCheck ? 1 : 0;
+  const mode_virtual = scenario.virtualCheck ? 1 : 0;
+  const mode_hybrid = scenario.hybridCheck ? 1 : 0;
+  const dur_2hrs = scenario.twoHCheck ? 1 : 0;
+  const dur_4hrs = scenario.fourHCheck ? 1 : 0;
+  const type_comm = scenario.commCheck ? 1 : 0;
+  const type_psych = scenario.psychCheck ? 1 : 0;
+  const type_vr = scenario.vrCheck ? 1 : 0;
 
   const U_alt = coefs.ASC_mean
-    + coefs.type_comm*type_comm
-    + coefs.type_psych*type_psych
-    + coefs.type_vr*type_vr
-    + coefs.mode_virtual*mode_virtual
-    + coefs.mode_hybrid*mode_hybrid
-    + coefs.freq_weekly*freq_weekly
-    + coefs.freq_monthly*freq_monthly
-    + coefs.dur_2hrs*dur_2hrs
-    + coefs.dur_4hrs*dur_4hrs
-    + coefs.dist_local*dist_local
-    + coefs.dist_signif*dist_signif
-    + coefs.cost_cont*finalCost;
+    + coefs.type_comm * type_comm
+    + coefs.type_psych * type_psych
+    + coefs.type_vr * type_vr
+    + coefs.mode_virtual * mode_virtual
+    + coefs.mode_hybrid * mode_hybrid
+    + coefs.freq_weekly * freq_weekly
+    + coefs.freq_monthly * freq_monthly
+    + coefs.dur_2hrs * dur_2hrs
+    + coefs.dur_4hrs * dur_4hrs
+    + coefs.dist_local * dist_local
+    + coefs.dist_signif * dist_signif
+    + coefs.cost_cont * finalCost;
 
-  const U_optout = coefs.ASC_optout;
   const exp_alt = Math.exp(U_alt);
-  const exp_opt = Math.exp(U_optout);
+  const exp_opt = Math.exp(coefs.ASC_optout);
   return exp_alt / (exp_alt + exp_opt);
 }
 
 /****************************************************************************
- * WTP DATA (MAIN MODEL ONLY)
+ * RENDER SINGLE PROBABILITY CHART
  ****************************************************************************/
-const wtpDataMain = [
-  { attribute: "Community engagement", wtp: 14.47 },
-  { attribute: "Psychological counselling", wtp: 4.28 },
-  { attribute: "Virtual reality", wtp: -9.58 },
-  { attribute: "Virtual (method)", wtp: -11.69 },
-  { attribute: "Hybrid (method)", wtp: -7.95 },
-  { attribute: "Weekly (freq)", wtp: 16.93 },
-  { attribute: "Monthly (freq)", wtp: 9.21 },
-  { attribute: "2-hour interaction", wtp: 5.08 },
-  { attribute: "4-hour interaction", wtp: 5.85 },
-  { attribute: "Local area accessibility", wtp: 1.62 },
-  { attribute: "Wider community accessibility", wtp: -13.99 }
-];
-
-/****************************************************************************
- * RENDER WTP CHART (MAIN MODEL ONLY)
- ****************************************************************************/
-function renderWTPChart(){
-  const ctx = document.getElementById("wtpChartMain").getContext("2d");
-  const labels = wtpDataMain.map(item => item.attribute);
-  const values = wtpDataMain.map(item => item.wtp);
-
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "WTP (AUD)",
-        data: values,
-        backgroundColor: values.map(v => v >= 0 ? 'rgba(39,174,96,0.6)' : 'rgba(231,76,60,0.6)'),
-        borderColor: values.map(v => v >= 0 ? 'rgba(39,174,96,1)' : 'rgba(231,76,60,1)'),
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true }
-      },
-      plugins: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: "Main Model WTP (AUD)",
-          font: { size: 16 }
-        }
-      }
-    }
-  });
-}
-
-/****************************************************************************
- * RENDER MAIN PROBABILITY CHART
- ****************************************************************************/
-function renderProbChart(){
+function renderProbChart() {
   const scenario = buildScenarioFromInputs();
-  if (!scenario) return; // invalid scenario => stop
+  if (!scenario) return;
 
-  const pVal = computeProbability(scenario, mainCoefficients)*100;
+  // Compute probability
+  const pVal = computeProbability(scenario, mainCoefficients) * 100;
   const ctx = document.getElementById("probChartMain").getContext("2d");
 
   new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ["Predicted Probability"],
+      labels: ["Program Uptake Probability"],
       datasets: [{
         label: 'Programme Uptake (%)',
         data: [pVal],
@@ -249,7 +201,7 @@ function renderProbChart(){
       responsive: true,
       indexAxis: 'y',
       scales: {
-        x: { 
+        x: {
           beginAtZero: true,
           max: 100
         }
@@ -258,7 +210,7 @@ function renderProbChart(){
         legend: { display: false },
         title: {
           display: true,
-          text: `Main Model Probability = ${pVal.toFixed(2)}%`,
+          text: `Program Uptake Probability = ${pVal.toFixed(2)}%`,
           font: { size: 16 }
         }
       }
@@ -267,7 +219,61 @@ function renderProbChart(){
 }
 
 /****************************************************************************
- * SCENARIO MANAGEMENT
+ * WTP DATA (MAIN)
+ ****************************************************************************/
+const wtpDataMain = [
+  { attribute: "Community engagement", wtp: 14.47 },
+  { attribute: "Psychological counselling", wtp: 4.28 },
+  { attribute: "Virtual reality", wtp: -9.58 },
+  { attribute: "Virtual (method)", wtp: -11.69 },
+  { attribute: "Hybrid (method)", wtp: -7.95 },
+  { attribute: "Weekly (freq)", wtp: 16.93 },
+  { attribute: "Monthly (freq)", wtp: 9.21 },
+  { attribute: "2-hour interaction", wtp: 5.08 },
+  { attribute: "4-hour interaction", wtp: 5.85 },
+  { attribute: "Local area accessibility", wtp: 1.62 },
+  { attribute: "Wider community accessibility", wtp: -13.99 }
+];
+
+/** 
+ * RENDER WTP CHART
+ */
+function renderWTPChart() {
+  const ctx = document.getElementById("wtpChartMain").getContext("2d");
+  const labels = wtpDataMain.map(item => item.attribute);
+  const values = wtpDataMain.map(item => item.wtp);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "WTP (A$)",
+        data: values,
+        backgroundColor: values.map(v => v >= 0 ? 'rgba(39,174,96,0.6)' : 'rgba(231,76,60,0.6)'),
+        borderColor: values.map(v => v >= 0 ? 'rgba(39,174,96,1)' : 'rgba(231,76,60,1)'),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      },
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: "WTP (A$)",
+          font: { size: 16 }
+        }
+      }
+    }
+  });
+}
+
+/****************************************************************************
+ * SCENARIO SAVING
  ****************************************************************************/
 let scenarioList = [];
 
@@ -277,7 +283,7 @@ function saveScenario() {
   sc.name = "Scenario " + (scenarioList.length + 1);
   scenarioList.push(sc);
   updateScenarioTable();
-  alert("Scenario saved.");
+  alert("Scenario saved!");
 }
 
 function updateScenarioTable() {
@@ -315,7 +321,7 @@ function openComparison() {
 }
 
 /****************************************************************************
- * SINGLE-SCENARIO WINDOW
+ * OPEN SINGLE-SCENARIO RESULTS
  ****************************************************************************/
 function openSingleScenario() {
   const sc = buildScenarioFromInputs();
@@ -324,12 +330,12 @@ function openSingleScenario() {
 }
 
 /****************************************************************************
- * OPEN A NEW WINDOW FOR COST-BENEFIT/PDF
+ * NEW WINDOW FOR COST-BENEFIT
  ****************************************************************************/
 function openResultsWindow(scenarios, windowTitle) {
-  const w = window.open("", "_blank", "width=1400,height=800,resizable,scrollbars");
+  const w = window.open("", "_blank", "width=1400,height=800,scrollbars,resizable");
   if (!w) {
-    alert("Please enable popups in your browser to see results.");
+    alert("Please allow popups to see results.");
     return;
   }
   w.document.write(`
@@ -340,10 +346,13 @@ function openResultsWindow(scenarios, windowTitle) {
       <style>
         body {
           margin: 20px;
-          font-family: Arial, sans-serif; 
+          font-family: Arial, sans-serif;
           background: #f4f7fa;
         }
-        h1 { text-align: center; color: #2c3e50; }
+        h1 {
+          text-align: center;
+          color: #2c3e50;
+        }
         .scenario-box {
           background: #fff;
           margin: 20px 0;
@@ -402,18 +411,19 @@ function openResultsWindow(scenarios, windowTitle) {
       <div class="buttons-row">
         <button onclick="downloadPDF()">Download PDF</button>
       </div>
-      
+
+      <!-- Chart.js + jsPDF in new window -->
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
       <script>
         const scenarioData = ${JSON.stringify(scenarios)};
 
-        window.onload = function() {
+        window.onload = function(){
           displayScenarios();
           buildCostBenefitChart();
         };
 
-        function displayScenarios() {
+        function displayScenarios(){
           const container = document.getElementById("resultsContainer");
           scenarioData.forEach(sc => {
             const box = document.createElement("div");
@@ -424,7 +434,9 @@ function openResultsWindow(scenarios, windowTitle) {
 
             const table = document.createElement("table");
             table.innerHTML = \`
-              <thead><tr><th>Attribute</th><th>Value</th></tr></thead>
+              <thead>
+                <tr><th>Attribute</th><th>Value</th></tr>
+              </thead>
               <tbody>
                 <tr><td>State</td><td>\${sc.state || '-'}</td></tr>
                 <tr><td>Adjust Costs?</td><td>\${sc.adjustCosts}</td></tr>
@@ -447,9 +459,9 @@ function openResultsWindow(scenarios, windowTitle) {
           });
         }
 
-        function buildCostBenefitChart() {
+        function buildCostBenefitChart(){
           const ctx = document.getElementById("cbaChart").getContext("2d");
-          // Sample cost & benefit
+          // Demo: cost * 1000, random benefits
           const labels = scenarioData.map(s => s.name || "Scenario");
           const costVals = scenarioData.map(s => s.cost_val * 1000);
           const benefitVals = scenarioData.map(s => Math.round(Math.random()*10000 + 5000));
@@ -498,3 +510,11 @@ function openResultsWindow(scenarios, windowTitle) {
   `);
   w.document.close();
 }
+
+/****************************************************************************
+ * SUGGESTIONS FOR FURTHER IMPROVEMENT
+ * 1. Incorporate real cost data & advanced cost-benefit logic.
+ * 2. Allow direct PDF exports capturing scenario data & probability charts.
+ * 3. Provide interactive sliders for more attributes, or a multi-attribute comparison table.
+ * 4. Expand WTP data to reflect confidence intervals, p-values, or significance in the bar plots.
+ ****************************************************************************/
