@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>LonelyLessAustralia Decision Aid Tool</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- jsPDF for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
@@ -18,9 +16,11 @@
 
   <div class="tabs">
     <button class="tablink active" onclick="openTab('introTab', this)">Introduction</button>
+    <button class="tablink" onclick="openTab('instructionsTab', this)">Instructions</button>
     <button class="tablink" onclick="openTab('attributesTab', this)">Attributes</button>
     <button class="tablink" onclick="openTab('inputsTab', this)">Inputs</button>
     <button class="tablink" onclick="openTab('wtpTab', this)">WTP Results</button>
+    <button class="tablink" onclick="openTab('probTab', this)">Program Uptake Probability</button>
     <button class="tablink" onclick="openTab('costsTab', this)">Costs & Benefits</button>
     <button class="tablink" onclick="openTab('scenariosTab', this)">Scenarios</button>
   </div>
@@ -29,67 +29,81 @@
   <div id="introTab" class="tabcontent" style="display: block;">
     <div class="intro-box">
       <p>
-        Loneliness affects over five million Australians, especially older adults, resulting in significant 
-        health and economic burdens. This online decision aid tool is developed from a discrete choice 
-        experiment that identified older adults’ preferences for programmes aimed at reducing loneliness 
-        in Australia. Utilising these DCE insights and estimates, the tool predicts uptake probabilities 
-        for different programme packages, enabling personalised services based on key factors older adults 
-        consider when seeking support.
+        Loneliness affects over five million Australians, especially older adults, leading 
+        to significant health and economic challenges. This decision aid tool is based on 
+        a discrete choice experiment (DCE) that identified older adults’ preferences for 
+        programmes aimed at reducing loneliness in Australia. Using the DCE estimates, 
+        the tool predicts programme uptake probabilities, offering personalised services 
+        based on the attributes older adults consider most important.
       </p>
       <p>
-        The loneliness categories used in this study were derived from the widely validated 
-        <em>De Jong Gierveld Loneliness Scale</em> (11-item version). This scale measures both emotional 
-        and social loneliness, and a total loneliness score was calculated as their sum. Following the 
-        established methodology, these scores were classified into three levels—Not Lonely, Moderately 
-        Lonely, and Severely Lonely—facilitating meaningful comparisons of preferences across different 
-        levels of loneliness severity.
-      </p>
-      <p>
-        Use the tabs above to navigate:
+        Please use the tabs above to navigate:
       </p>
       <ul>
-        <li><strong>Attributes</strong> – Detailed descriptions of the DCE attributes.</li>
-        <li><strong>Inputs</strong> – Select or configure your scenario attributes.</li>
-        <li><strong>WTP Results</strong> – View willingness-to-pay estimates for the main model and by 
-          loneliness category.</li>
-        <li><strong>Costs & Benefits</strong> – Explore the cost components and the assumptions around 
-          benefits.</li>
-        <li><strong>Scenarios</strong> – Save multiple configurations and compare them side by side, 
-          complete with optional PDF exports.</li>
+        <li><strong>Instructions</strong> – Step-by-step guidance on using the tool.</li>
+        <li><strong>Attributes</strong> – A summary of each DCE attribute.</li>
+        <li><strong>Inputs</strong> – Configure your scenario attributes.</li>
+        <li><strong>WTP Results</strong> – Visualise the main model’s willingness to pay in a bar chart.</li>
+        <li><strong>Program Uptake Probability</strong> – See a bar chart for predicted programme uptake (main model only).</li>
+        <li><strong>Costs &amp; Benefits</strong> – Overview of cost-of-living multipliers, A\$5,000 per 1% improvement, etc.</li>
+        <li><strong>Scenarios</strong> – Save multiple configurations for advanced cost-benefit analysis or PDF exports.</li>
       </ul>
     </div>
+  </div>
+
+  <!-- Instructions Tab -->
+  <div id="instructionsTab" class="tabcontent">
+    <h2>How to Use This Tool</h2>
+    <p>
+      1. Read about the <strong>Attributes</strong> to understand each dimension of the programme.
+    </p>
+    <p>
+      2. In <strong>Inputs</strong>, choose your state (if any), cost-of-living adjustments, cost per session, 
+      accessibility, frequency, method of interaction, duration, and type of support. 
+    </p>
+    <p>
+      3. Click “Calculate &amp; View Results” to open a new window with cost-benefit charts, 
+      predicted programme uptake probability, and optional PDF export.
+    </p>
+    <p>
+      4. Save your scenario under the <strong>Scenarios</strong> tab if you wish to compare 
+      multiple configurations side by side.
+    </p>
+    <p>
+      5. <strong>WTP Results</strong> shows a bar chart for the main model only.  
+    </p>
+    <p>
+      6. <strong>Program Uptake Probability</strong> displays a bar chart for predicted 
+      programme uptake under the main model, updated with your Inputs.
+    </p>
+    <p>
+      7. <strong>Costs &amp; Benefits</strong> provides an overview of cost-of-living assumptions 
+      and the A\$5,000 per 1% improvement baseline.
+    </p>
   </div>
 
   <!-- Attributes Tab -->
   <div id="attributesTab" class="tabcontent">
     <h2>Programme Attributes</h2>
-    <p><strong>Cost:</strong> The out-of-pocket cost participants incur each time they join a session.</p>
-    <p><strong>Accessibility:</strong> The ease or difficulty of attending, considering travel distance 
-      and mobility.</p>
-    <p><strong>Frequency of Interaction:</strong> How often individuals participate (e.g., weekly, monthly, 
-      or daily reference).</p>
-    <p><strong>Method of Interaction:</strong> In-person, virtual-only, or hybrid; crucial for those with 
-      limited mobility or a preference for digital connection.</p>
-    <p><strong>Duration of Each Interaction:</strong> The length of each session (e.g., 30 min, 2 hours, 
-      4 hours).</p>
-    <p><strong>Type of Support Programme:</strong> The nature of support: peer support, community engagement, 
-      psychological counselling, virtual reality, etc.</p>
-    <p>
-      Some costs may be adjusted by <strong>Cost-of-Living multipliers</strong> depending on the chosen state. 
-      Proceed to <strong>Inputs</strong> to explore scenarios.
-    </p>
+    <p><strong>Cost:</strong> The out-of-pocket fee participants pay each session.</p>
+    <p><strong>Accessibility:</strong> Local area vs. wider community, factoring mobility and travel distance.</p>
+    <p><strong>Frequency of Interaction:</strong> Daily reference, weekly, monthly, etc.</p>
+    <p><strong>Method of Interaction:</strong> In-person, virtual-only, or hybrid (both in-person &amp; virtual).</p>
+    <p><strong>Duration of Each Interaction:</strong> 30 minutes (reference), 2 hours, 4 hours, etc.</p>
+    <p><strong>Type of Support Programme:</strong> Peer support, community engagement, counselling, VR, etc.</p>
   </div>
 
   <!-- Inputs Tab -->
   <div id="inputsTab" class="tabcontent">
     <h2>Programme Inputs</h2>
-    <p>Set the scenario attributes below, then click “Calculate & View Results” to open a new window with 
-      predicted probabilities, advanced cost-benefit charts, etc.</p>
-
-    <form id="inputsForm" onsubmit="event.preventDefault();">
+    <p>
+      Configure the scenario attributes below, then click “Calculate &amp; View Results” 
+      to open a new window with advanced cost-benefit charts and predicted probabilities.
+    </p>
+    <form onsubmit="event.preventDefault();">
       <div class="form-grid">
 
-        <!-- State & Cost-of-Living -->
+        <!-- State + CoL -->
         <div class="form-item">
           <label for="state_select">State:</label>
           <select id="state_select">
@@ -111,9 +125,9 @@
           </select>
         </div>
 
-        <!-- Cost Slider -->
+        <!-- Cost slider -->
         <div class="form-item">
-          <label for="costSlider">
+          <label>
             Cost per Session (AUD): <span id="costLabel">50</span>
           </label>
           <input 
@@ -145,7 +159,7 @@
         <div class="form-item">
           <label><input type="checkbox" id="virtualCheck" />Virtual Only</label>
           <br/>
-          <label><input type="checkbox" id="hybridCheck" />Hybrid (In-person & Virtual)</label>
+          <label><input type="checkbox" id="hybridCheck" />Hybrid (In-person &amp; Virtual)</label>
         </div>
 
         <!-- Duration -->
@@ -166,7 +180,7 @@
 
       </div>
       <div class="buttons-row">
-        <button type="button" onclick="openSingleScenario()">Calculate & View Results</button>
+        <button type="button" onclick="openSingleScenario()">Calculate &amp; View Results</button>
       </div>
     </form>
   </div>
@@ -175,91 +189,53 @@
   <div id="wtpTab" class="tabcontent">
     <h2>Willingness to Pay (WTP) Results</h2>
     <p>
-      Below are the WTP estimates (in AUD) from the Error-Component Logit Model, including the main model 
-      and results by loneliness category.
+      Click “Show WTP Plot” to display the bar chart illustrating the main model’s WTP for each attribute.
     </p>
+    <div class="buttons-row">
+      <button onclick="renderWTPChart()">Show WTP Plot</button>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h3>Main Model WTP</h3>
+        <canvas id="wtpChartMain"></canvas>
+      </div>
+    </div>
+  </div>
 
-    <!-- Main Model WTP -->
-    <h3>Main Model</h3>
-    <table class="wtpTable">
-      <thead>
-        <tr>
-          <th>Attribute</th>
-          <th>Coefficient</th>
-          <th>p-value</th>
-          <th>Significance</th>
-          <th>WTP (AUD)</th>
-        </tr>
-      </thead>
-      <tbody id="wtpBodyMain"></tbody>
-    </table>
-
-    <!-- Not Lonely WTP -->
-    <h3>Not Lonely</h3>
-    <table class="wtpTable">
-      <thead>
-        <tr>
-          <th>Attribute</th>
-          <th>Coefficient</th>
-          <th>p-value</th>
-          <th>Significance</th>
-          <th>WTP (AUD)</th>
-        </tr>
-      </thead>
-      <tbody id="wtpBodyNotLonely"></tbody>
-    </table>
-
-    <!-- Moderately Lonely WTP -->
-    <h3>Moderately Lonely</h3>
-    <table class="wtpTable">
-      <thead>
-        <tr>
-          <th>Attribute</th>
-          <th>Coefficient</th>
-          <th>p-value</th>
-          <th>Significance</th>
-          <th>WTP (AUD)</th>
-        </tr>
-      </thead>
-      <tbody id="wtpBodyModLonely"></tbody>
-    </table>
-
-    <!-- Severely Lonely WTP -->
-    <h3>Severely Lonely</h3>
-    <table class="wtpTable">
-      <thead>
-        <tr>
-          <th>Attribute</th>
-          <th>Coefficient</th>
-          <th>p-value</th>
-          <th>Significance</th>
-          <th>WTP (AUD)</th>
-        </tr>
-      </thead>
-      <tbody id="wtpBodySevLonely"></tbody>
-    </table>
-
+  <!-- Single Probability Plot Tab -->
+  <div id="probTab" class="tabcontent">
+    <h2>Program Uptake Probability</h2>
     <p>
-      Significance levels: * p &lt; 0.05, ** p &lt; 0.01, *** p &lt; 0.001
+      Click “Show Probability Plot” to compute and display a bar chart for predicted 
+      programme uptake under the main model based on your current inputs.
     </p>
+    <div class="buttons-row">
+      <button onclick="renderProbChart()">Show Probability Plot</button>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h3>Main Model Probability</h3>
+        <canvas id="probChartMain"></canvas>
+      </div>
+    </div>
   </div>
 
   <!-- Costs & Benefits Tab -->
   <div id="costsTab" class="tabcontent">
-    <h2>Cost Components & Benefits</h2>
-    <p>Costs may include:</p>
+    <h2>Cost Components &amp; Benefits</h2>
+    <p>
+      This tool assumes cost-of-living multipliers by state, plus <strong>A\$5,000</strong> 
+      for each 1% improvement in programme uptake. Cost components often include:
+    </p>
     <ul>
       <li>Staff/Personnel</li>
-      <li>Facilities & Equipment</li>
-      <li>Marketing & Outreach</li>
-      <li>Training & Certification</li>
+      <li>Facilities &amp; Equipment</li>
+      <li>Marketing &amp; Outreach</li>
+      <li>Training &amp; Certification</li>
       <li>Miscellaneous Operational Expenses</li>
-      <li>Cost-of-Living Multipliers (by state)</li>
     </ul>
     <p>
-      Benefits are modelled by attributing a monetary value per 1% improvement in uptake. 
-      These figures can be adjusted to reflect real-world data and validated cost-benefit 
-      evaluations.
+      These provide a realistic baseline for calculating costs and benefits in this tool.
     </p>
   </div>
 
@@ -267,8 +243,8 @@
   <div id="scenariosTab" class="tabcontent">
     <h2>Saved Scenarios</h2>
     <p>
-      Save the current scenario from the <strong>Inputs</strong> tab, then compare multiple 
-      scenarios in another window using advanced cost-benefit charts or PDF downloads.
+      Save your current scenario (from the <strong>Inputs</strong> tab), then compare multiple 
+      scenarios with advanced cost-benefit charts or PDF exports.
     </p>
     <div class="buttons-row">
       <button onclick="saveScenario()">Save Current Scenario</button>
@@ -305,8 +281,6 @@
     </p>
   </footer>
 </div>
-
-<!-- Reference main script -->
 <script src="script.js"></script>
 </body>
 </html>
