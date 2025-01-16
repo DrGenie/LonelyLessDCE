@@ -134,7 +134,8 @@ header h1 {
   border-collapse: collapse;
   margin-top: 20px;
 }
-#scenarioTable th, #scenarioTable td {
+#scenarioTable th,
+#scenarioTable td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: left;
