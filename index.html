@@ -42,7 +42,7 @@
         <li><strong>Inputs</strong> – Configure your scenario’s cost, accessibility, frequency, etc.</li>
         <li><strong>WTP Results</strong> – View a bar chart of main model willingness to pay (A$) with standard errors.</li>
         <li><strong>Program Uptake Probability</strong> – Dynamically computed chart based on your scenario inputs.</li>
-        <li><strong>Costs &amp; Benefits</strong> – Reflects new literature-based cost estimates and QALY gains.</li>
+        <li><strong>Costs &amp; Benefits</strong> – Integrates the new realistic cost items and QALY-based benefits.</li>
         <li><strong>Scenarios</strong> – Save multiple scenarios, compare them, or export PDF-based results.</li>
       </ul>
     </div>
@@ -55,11 +55,11 @@
       1. Check <strong>Attributes</strong> to understand cost, accessibility, frequency, method, duration, and support types.
     </p>
     <p>
-      2. Under <strong>Inputs</strong>, select your state (if any), whether to adjust for cost-of-living, cost per session, 
+      2. In <strong>Inputs</strong>, select your state (if any), whether to adjust for cost-of-living, cost per session, 
       local vs. wider community, weekly vs. monthly, virtual vs. hybrid, session duration, and support type.
     </p>
     <p>
-      3. Click “Calculate &amp; View Results” to open a new window with cost-benefit charts, QALY gains, and an optional PDF export. 
+      3. Click “Calculate &amp; View Results” to open a new window with cost-benefit charts and an optional PDF export. 
     </p>
     <p>
       4. The <strong>WTP Results</strong> tab displays a bar chart summarising the main model’s willingness to pay (A$) for each attribute.
@@ -68,18 +68,18 @@
       5. The <strong>Program Uptake Probability</strong> tab offers a bar chart for the predicted programme uptake under your current scenario.
     </p>
     <p>
-      6. The <strong>Costs &amp; Benefits</strong> tab consolidates realistic cost data (advertisement, training, delivery, 
-      participant time/travel, total cost) and QALY-based benefits (0.02, 0.05, or 0.1 QALYs).
+      6. The <strong>Costs &amp; Benefits</strong> tab integrates new data (advertisement, training, delivery, participant time/travel) 
+      and QALY-based benefits for different uptake probabilities.
     </p>
     <p>
-      7. Under <strong>Scenarios</strong>, you can save or compare multiple configurations side by side.
+      7. Under <strong>Scenarios</strong>, you can save multiple configurations, compare them side by side, or export your results to PDF.
     </p>
   </div>
 
   <!-- Attributes Tab -->
   <div id="attributesTab" class="tabcontent">
     <h2>Programme Attributes</h2>
-    <p><strong>Cost per session:</strong> The out-of-pocket fee (AUD) that participants must pay every time they attend.</p>
+    <p><strong>Cost per session:</strong> The out-of-pocket fee (AUD) participants must pay each time they attend.</p>
     <p><strong>Accessibility:</strong> Whether the programme is local (up to 12 km) or in a wider community (50+ km), 
       factoring in mobility, transport cost, and convenience.</p>
     <p><strong>Frequency of Interaction:</strong> Daily (reference), weekly, or monthly, influencing how often participants engage socially.</p>
@@ -203,8 +203,7 @@
     <p>
       Click “Show Probability Plot” to compute a new bar chart based on your <strong>Inputs</strong>. 
       Depending on whether the predicted uptake is below 30%, between 30–70%, or above 70%, 
-      you will receive suggestions on possible adjustments (e.g., lowering cost or adding 
-      community engagement features) that could increase uptake.
+      you will see suggestions for adjustments in cost, accessibility, or frequency.
     </p>
     <div class="buttons-row">
       <button onclick="renderProbChart()">Show Probability Plot</button>
@@ -221,40 +220,45 @@
   <div id="costsTab" class="tabcontent">
     <h2>Costs &amp; Benefits</h2>
     <p>
-      <strong>Literature-Based Estimates of QALY Gains</strong>:
-      <ul>
-        <li>Masi et al. (2011): Social interventions can reduce loneliness and improve mental health, implying QALY gains.</li>
-        <li>Eaton et al. (2010): 0.05 QALYs per participant over five years.</li>
-        <li>PRISM Trial (Shankar et al., 2017): 0.03–0.07 QALYs per participant over three years.</li>
-        <li>OECD (2011): 0.02–0.1 QALYs per participant, depending on intervention.</li>
-      </ul>
-      We implement three scenarios for QALY gains per participant:
-      <strong>Low = 0.02 QALYs</strong>, <strong>Moderate = 0.05 QALYs</strong>, and <strong>High = 0.1 QALYs</strong>.
+      <strong>Literature-Based Estimates of QALY Gains:</strong><br/>
+      Masi et al. (2011) and Eaton et al. (2010) suggest potential QALY gains from social interventions 
+      ranging between 0.02 and 0.1 per participant. This tool uses three scenarios:
+    </p>
+    <ul>
+      <li><strong>Low:</strong> 0.02 QALYs per participant</li>
+      <li><strong>Moderate:</strong> 0.05 QALYs per participant</li>
+      <li><strong>High:</strong> 0.1 QALYs per participant</li>
+    </ul>
+    <p>
+      <strong>Monetization of QALY Gains:</strong><br/>
+      Each QALY is valued at A$50,000, so the benefit = QALY Gains × A$50,000. 
+      For instance, with 0.05 QALYs and 50% uptake, the monetized benefit is A$2,500 per participant.
+    </p>
+    <h3>Intervention Costs:</h3>
+    <p>
+      1. <strong>Advertisement &amp; Recruitment (A$8,127.60):</strong>  
+      Includes local press ads, leaflet printing, postage, and admin personnel (News Corp Australia, 2017; Tran et al., 2018; Sendle, n.d.; ABS, 2016).
     </p>
     <p>
-      <strong>Monetization of QALY Gains</strong>:
-      Each QALY is valued at A$50,000. 
-      Multiply the total QALY gains by this value to determine monetised benefits. 
+      2. <strong>Training Costs (A$26,863.00):</strong>  
+      Trainer fees + on-costs for 100 facilitators (ABS, 2016).
     </p>
     <p>
-      <strong>Realistic Cost Data</strong>:
-      <ul>
-        <li><strong>Advertisement &amp; Recruitment:</strong> A$8,127.60 total (newspaper ads, leaflets, postage, admin personnel).</li>
-        <li><strong>Training Facilitators:</strong> A$10,000.00 (covering five-hour sessions for 100 facilitators).</li>
-        <li><strong>Delivery Costs:</strong> A$32,000.00 (facilitator salaries, materials, venue hire).</li>
-        <li><strong>Participant Time &amp; Travel:</strong> A$7,500.00 (time cost plus local travel expenses).</li>
-        <li><strong>Total Intervention Cost (Base):</strong> A$55,627.60, at ~A$20.00 per person for 2-hour sessions across 100 groups.</li>
-      </ul>
-      This base cost is scaled dynamically by the predicted programme uptake (8% to 90%). 
-      For instance, if predicted uptake is 50%, total costs are proportionally A$27,813.80 
-      (assuming fewer participants leads to reduced material &amp; delivery costs).
+      3. <strong>Delivery Costs (A$18,000.00):</strong>  
+      Includes facilitator salaries (12 sessions), materials, and venue hire (ABS, 2016; Movisie, 2018; Melbourne City Library, n.d.).
     </p>
     <p>
-      <strong>Integration with Program Uptake Probability</strong>:
-      If you select more attractive features (e.g., community engagement, which has a WTP of A$14.47), 
-      uptake probabilities are likely higher, increasing total costs but also enhancing QALY gains.
-      Conversely, VR (WTP -A$9.58) may yield lower uptake, reducing total costs but also lowering QALY 
-      improvements overall.
+      4. <strong>Participant Time &amp; Travel (A$7,500.00):</strong>  
+      Time cost for 250 participants + local travel (Tran et al., 2018).
+    </p>
+    <p>
+      <strong>Total Intervention Cost:</strong> A$55,627.60, with a cost per person of ~A$20 if 2,500 participants are reached.
+      Adjust this figure if fewer participants or different program features are chosen.
+    </p>
+    <p>
+      The tool dynamically updates total cost estimates based on the program uptake probability. 
+      Community engagement (high WTP) typically yields higher uptake (and thus higher overall costs), 
+      while VR (negative WTP) might reduce both uptake and costs.
     </p>
   </div>
 
