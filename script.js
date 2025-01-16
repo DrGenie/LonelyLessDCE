@@ -1,15 +1,15 @@
 /****************************************************************************
- * SCRIPT.JS - Single DCE model (no categories)
+ * SCRIPT.JS
  * 1) Tab navigation
- * 2) Range slider label
- * 3) Main DCE coefficients
- * 4) WTP data for main model
- * 5) Probability & WTP bar charts
- * 6) Scenario saving & multi-window PDF stubs
+ * 2) Range slider label updates
+ * 3) Main DCE coefficients (no categories)
+ * 4) WTP data with example p-values/SE in commentary
+ * 5) Probability & WTP bar charts (recomputed each time user clicks)
+ * 6) Scenario saving & multi-window PDF logic
  * Author: Mesfin Genie, Newcastle Business School, The University of Newcastle, Australia
  ****************************************************************************/
 
-/** Default to the Introduction tab on load */
+/** On page load, default to the Introduction tab */
 window.onload = function() {
   openTab('introTab', document.querySelector('.tablink'));
 };
@@ -17,28 +17,28 @@ window.onload = function() {
 /** Simple tab switcher */
 function openTab(tabId, btn) {
   const allTabs = document.getElementsByClassName("tabcontent");
-  for (let i=0; i<allTabs.length; i++){
+  for (let i = 0; i < allTabs.length; i++) {
     allTabs[i].style.display = "none";
   }
   const allBtns = document.getElementsByClassName("tablink");
-  for (let j=0; j<allBtns.length; j++){
+  for (let j = 0; j < allBtns.length; j++) {
     allBtns[j].classList.remove("active");
   }
   document.getElementById(tabId).style.display = "block";
   btn.classList.add("active");
 }
 
-/** Range slider label update */
-function updateCostDisplay(val){
+/** Range slider label updates */
+function updateCostDisplay(val) {
   document.getElementById("costLabel").textContent = val;
 }
 
-/****************************************************************************
+/***************************************************************************
  * MAIN DCE COEFFICIENTS
- ****************************************************************************/
+ ***************************************************************************/
 const mainCoefficients = {
   ASC_mean: -0.112,
-  ASC_sd: 1.161,
+  ASC_sd: 1.161, // standard deviation of ASC (not used in calculation)
   ASC_optout: 0.131,
   type_comm: 0.527,
   type_psych: 0.156,
@@ -54,15 +54,16 @@ const mainCoefficients = {
   cost_cont: -0.036
 };
 
-/** Example interpretation of these WTP results (for Community Engagement):
- * "Among the programme types, community engagement was the most highly valued, with a WTP of A$14.47 (SE=3.31, p<0.001).
- *  This indicates older adults are willing to pay A$14.47 for programmes that foster social interaction and community 
+/** 
+ * Example interpretation of these WTP results:
+ * "Among the programme types, community engagement was the most highly valued, with a WTP of A$14.47 (SE=3.31, p < 0.001).
+ *  This indicates that older adults are willing to pay A$14.47 for programmes that foster social interaction and community 
  *  connections, relative to the reference category of peer support."
  */
 
-/****************************************************************************
+/***************************************************************************
  * COST-OF-LIVING MULTIPLIERS
- ****************************************************************************/
+ ***************************************************************************/
 const costOfLivingMultipliers = {
   NSW: 1.10,
   VIC: 1.05,
@@ -74,9 +75,9 @@ const costOfLivingMultipliers = {
   NT: 1.07
 };
 
-/****************************************************************************
- * BUILD SCENARIO FROM FORM
- ****************************************************************************/
+/***************************************************************************
+ * BUILD SCENARIO FROM CURRENT INPUTS
+ ***************************************************************************/
 function buildScenarioFromInputs() {
   const state = document.getElementById("state_select").value;
   const adjustCosts = document.getElementById("adjustCosts").value;
@@ -94,9 +95,9 @@ function buildScenarioFromInputs() {
   const psychCheck = document.getElementById("psychCheck").checked;
   const vrCheck = document.getElementById("vrCheck").checked;
 
-  // Validations
+  // Basic constraints
   if (localCheck && widerCheck) {
-    alert("Cannot select both Local Area and Wider Community.");
+    alert("Cannot select both Local Area and Wider Community in one scenario.");
     return null;
   }
   if (weeklyCheck && monthlyCheck) {
@@ -104,11 +105,11 @@ function buildScenarioFromInputs() {
     return null;
   }
   if (twoHCheck && fourHCheck) {
-    alert("Cannot select both 2-Hour and 4-Hour at the same time.");
+    alert("Cannot select both 2-Hour and 4-Hour sessions simultaneously.");
     return null;
   }
   if (adjustCosts === 'yes' && !state) {
-    alert("Please select a state if cost-of-living is adjusted.");
+    alert("Please select a state if adjusting cost-of-living.");
     return null;
   }
 
@@ -130,15 +131,16 @@ function buildScenarioFromInputs() {
   };
 }
 
-/****************************************************************************
- * COMPUTE PREDICTED PROBABILITY
- ****************************************************************************/
+/***************************************************************************
+ * COMPUTE PROBABILITY
+ ***************************************************************************/
 function computeProbability(scenario, coefs) {
   let finalCost = scenario.cost_val;
   if (scenario.adjustCosts === 'yes' && scenario.state && costOfLivingMultipliers[scenario.state]) {
     finalCost *= costOfLivingMultipliers[scenario.state];
   }
 
+  // Convert checkboxes to 0/1
   const dist_local = scenario.localCheck ? 1 : 0;
   const dist_signif = scenario.widerCheck ? 1 : 0;
   const freq_weekly = scenario.weeklyCheck ? 1 : 0;
@@ -151,6 +153,7 @@ function computeProbability(scenario, coefs) {
   const type_psych = scenario.psychCheck ? 1 : 0;
   const type_vr = scenario.vrCheck ? 1 : 0;
 
+  // Utility for the alternative
   const U_alt = coefs.ASC_mean
     + coefs.type_comm * type_comm
     + coefs.type_psych * type_psych
@@ -165,14 +168,16 @@ function computeProbability(scenario, coefs) {
     + coefs.dist_signif * dist_signif
     + coefs.cost_cont * finalCost;
 
+  const U_optout = coefs.ASC_optout;
   const exp_alt = Math.exp(U_alt);
-  const exp_opt = Math.exp(coefs.ASC_optout);
+  const exp_opt = Math.exp(U_optout);
   return exp_alt / (exp_alt + exp_opt);
 }
 
-/****************************************************************************
- * RENDER SINGLE PROBABILITY CHART
- ****************************************************************************/
+/***************************************************************************
+ * RENDER PROB CHART (DESTROY OLD IF EXISTS)
+ ***************************************************************************/
+let probChartInstance = null;
 function renderProbChart() {
   const scenario = buildScenarioFromInputs();
   if (!scenario) return;
@@ -181,19 +186,24 @@ function renderProbChart() {
   const pVal = computeProbability(scenario, mainCoefficients) * 100;
   const ctx = document.getElementById("probChartMain").getContext("2d");
 
-  new Chart(ctx, {
+  // If there's an old chart, destroy it
+  if (probChartInstance) {
+    probChartInstance.destroy();
+  }
+
+  probChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: ["Program Uptake Probability"],
       datasets: [{
         label: 'Programme Uptake (%)',
         data: [pVal],
-        backgroundColor: pVal < 30 ? 'rgba(231,76,60,0.6)'
-                       : pVal < 70 ? 'rgba(241,196,15,0.6)'
-                       : 'rgba(39,174,96,0.6)',
-        borderColor: pVal < 30 ? 'rgba(231,76,60,1)'
-                     : pVal < 70 ? 'rgba(241,196,15,1)'
-                     : 'rgba(39,174,96,1)',
+        backgroundColor: pVal < 30 ? 'rgba(231,76,60,0.6)' 
+                                   : pVal < 70 ? 'rgba(241,196,15,0.6)' 
+                                               : 'rgba(39,174,96,0.6)',
+        borderColor: pVal < 30 ? 'rgba(231,76,60,1)' 
+                                : pVal < 70 ? 'rgba(241,196,15,1)' 
+                                            : 'rgba(39,174,96,1)',
         borderWidth: 1
       }]
     },
@@ -218,32 +228,37 @@ function renderProbChart() {
   });
 }
 
-/****************************************************************************
- * WTP DATA (MAIN)
- ****************************************************************************/
+/***************************************************************************
+ * WTP CHART (DESTROY OLD IF EXISTS)
+ ***************************************************************************/
 const wtpDataMain = [
-  { attribute: "Community engagement", wtp: 14.47 },
-  { attribute: "Psychological counselling", wtp: 4.28 },
-  { attribute: "Virtual reality", wtp: -9.58 },
-  { attribute: "Virtual (method)", wtp: -11.69 },
-  { attribute: "Hybrid (method)", wtp: -7.95 },
-  { attribute: "Weekly (freq)", wtp: 16.93 },
-  { attribute: "Monthly (freq)", wtp: 9.21 },
-  { attribute: "2-hour interaction", wtp: 5.08 },
-  { attribute: "4-hour interaction", wtp: 5.85 },
-  { attribute: "Local area accessibility", wtp: 1.62 },
-  { attribute: "Wider community accessibility", wtp: -13.99 }
+  // Optionally add more metadata like p-value, SE, significance, etc.
+  { attribute: "Community engagement", wtp: 14.47, pVal: 0.000, se: 3.31 },
+  { attribute: "Psychological counselling", wtp: 4.28, pVal: 0.245, se: 3.76 },
+  { attribute: "Virtual reality", wtp: -9.58, pVal: 0.009, se: 3.72 },
+  { attribute: "Virtual (method)", wtp: -11.69, pVal: 0.019, se: 5.02 },
+  { attribute: "Hybrid (method)", wtp: -7.95, pVal: 0.001, se: 2.51 },
+  { attribute: "Weekly (freq)", wtp: 16.93, pVal: 0.000, se: 2.73 },
+  { attribute: "Monthly (freq)", wtp: 9.21, pVal: 0.005, se: 3.26 },
+  { attribute: "2-hour interaction", wtp: 5.08, pVal: 0.059, se: 2.69 },
+  { attribute: "4-hour interaction", wtp: 5.85, pVal: 0.037, se: 2.79 },
+  { attribute: "Local area accessibility", wtp: 1.62, pVal: 0.712, se: 4.41 },
+  { attribute: "Wider community accessibility", wtp: -13.99, pVal: 0.000, se: 3.98 }
 ];
 
-/** 
- * RENDER WTP CHART
- */
+let wtpChartInstance = null;
 function renderWTPChart() {
   const ctx = document.getElementById("wtpChartMain").getContext("2d");
+  
+  // Destroy old chart if it exists
+  if (wtpChartInstance) {
+    wtpChartInstance.destroy();
+  }
+  
   const labels = wtpDataMain.map(item => item.attribute);
   const values = wtpDataMain.map(item => item.wtp);
 
-  new Chart(ctx, {
+  wtpChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: labels,
@@ -272,9 +287,9 @@ function renderWTPChart() {
   });
 }
 
-/****************************************************************************
- * SCENARIO SAVING
- ****************************************************************************/
+/***************************************************************************
+ * SCENARIO SAVING & COMPARISON
+ ***************************************************************************/
 let scenarioList = [];
 
 function saveScenario() {
@@ -320,22 +335,22 @@ function openComparison() {
   openResultsWindow(scenarioList, "Compare Multiple Scenarios");
 }
 
-/****************************************************************************
- * OPEN SINGLE-SCENARIO RESULTS
- ****************************************************************************/
+/***************************************************************************
+ * SINGLE-SCENARIO WINDOW
+ ***************************************************************************/
 function openSingleScenario() {
   const sc = buildScenarioFromInputs();
   if (!sc) return;
   openResultsWindow([sc], "Single Scenario Results");
 }
 
-/****************************************************************************
- * NEW WINDOW FOR COST-BENEFIT
- ****************************************************************************/
+/***************************************************************************
+ * COST-BENEFIT WINDOW (PDF)
+ ***************************************************************************/
 function openResultsWindow(scenarios, windowTitle) {
   const w = window.open("", "_blank", "width=1400,height=800,scrollbars,resizable");
   if (!w) {
-    alert("Please allow popups to see results.");
+    alert("Please allow popups for results window.");
     return;
   }
   w.document.write(`
@@ -370,7 +385,7 @@ function openResultsWindow(scenarios, windowTitle) {
           padding: 8px;
         }
         th {
-          background: #2980b9; 
+          background: #2980b9;
           color: #fff;
         }
         .chart-container {
@@ -411,8 +426,6 @@ function openResultsWindow(scenarios, windowTitle) {
       <div class="buttons-row">
         <button onclick="downloadPDF()">Download PDF</button>
       </div>
-
-      <!-- Chart.js + jsPDF in new window -->
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
       <script>
@@ -434,9 +447,7 @@ function openResultsWindow(scenarios, windowTitle) {
 
             const table = document.createElement("table");
             table.innerHTML = \`
-              <thead>
-                <tr><th>Attribute</th><th>Value</th></tr>
-              </thead>
+              <thead><tr><th>Attribute</th><th>Value</th></tr></thead>
               <tbody>
                 <tr><td>State</td><td>\${sc.state || '-'}</td></tr>
                 <tr><td>Adjust Costs?</td><td>\${sc.adjustCosts}</td></tr>
@@ -461,7 +472,7 @@ function openResultsWindow(scenarios, windowTitle) {
 
         function buildCostBenefitChart(){
           const ctx = document.getElementById("cbaChart").getContext("2d");
-          // Demo: cost * 1000, random benefits
+          // Basic example: cost * 1000, random benefits
           const labels = scenarioData.map(s => s.name || "Scenario");
           const costVals = scenarioData.map(s => s.cost_val * 1000);
           const benefitVals = scenarioData.map(s => Math.round(Math.random()*10000 + 5000));
@@ -513,8 +524,8 @@ function openResultsWindow(scenarios, windowTitle) {
 
 /****************************************************************************
  * SUGGESTIONS FOR FURTHER IMPROVEMENT
- * 1. Incorporate real cost data & advanced cost-benefit logic.
- * 2. Allow direct PDF exports capturing scenario data & probability charts.
- * 3. Provide interactive sliders for more attributes, or a multi-attribute comparison table.
- * 4. Expand WTP data to reflect confidence intervals, p-values, or significance in the bar plots.
+ * 1) Include confidence intervals or error bars for WTP data (p-values, SE).
+ * 2) Enable direct PDF exports capturing the probability chart from the main page.
+ * 3) Provide dynamic or default scenario memory so changes auto-update the probability chart without manual clicks.
+ * 4) Implement more advanced cost-benefit logic with real cost inputs, not random.
  ****************************************************************************/
