@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>LonelyLessAustralia Decision Aid Tool</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -29,22 +29,22 @@
   <div id="introTab" class="tabcontent" style="display: block;">
     <div class="intro-box">
       <p>
-        Loneliness affects over five million Australians, especially older adults, resulting 
-        in serious health and economic challenges. This decision aid tool leverages discrete 
-        choice experiment (DCE) estimates to predict programme uptake probabilities, enabling 
-        personalised services based on the attributes older adults deem most important.
+        Loneliness affects over five million Australians, especially older adults, leading 
+        to significant health and economic challenges. This tool draws on a discrete choice 
+        experiment (DCE) to forecast programme uptake probabilities, informing 
+        personalised services grounded in older adults’ priorities.
       </p>
       <p>
-        Use the tabs above to explore:
+        Navigate with the tabs above:
       </p>
       <ul>
-        <li><strong>Instructions</strong> – Step-by-step guidance.</li>
-        <li><strong>Attributes</strong> – Summaries of each DCE attribute.</li>
+        <li><strong>Instructions</strong> – Guidance for each tool feature.</li>
+        <li><strong>Attributes</strong> – A detailed description of each DCE attribute.</li>
         <li><strong>Inputs</strong> – Configure your scenario’s cost, accessibility, etc.</li>
-        <li><strong>WTP Results</strong> – Visualise bar charts for willingness to pay (A$).</li>
-        <li><strong>Program Uptake Probability</strong> – Calculate a bar chart for your scenario’s predicted uptake.</li>
-        <li><strong>Costs &amp; Benefits</strong> – Overview of cost-of-living assumptions and A\$5,000 per 1% improvement.</li>
-        <li><strong>Scenarios</strong> – Save multiple scenarios for advanced cost-benefit charts or PDF exports.</li>
+        <li><strong>WTP Results</strong> – A bar chart of willingness-to-pay (A$) for main model attributes, with possible p-values.</li>
+        <li><strong>Program Uptake Probability</strong> – Dynamically computed bar chart based on your current selections.</li>
+        <li><strong>Costs &amp; Benefits</strong> – Outlines cost-of-living and the A\$5,000 per 1% improvement assumption.</li>
+        <li><strong>Scenarios</strong> – Save your scenarios to compare or export PDF reports with advanced charts.</li>
       </ul>
     </div>
   </div>
@@ -53,52 +53,54 @@
   <div id="instructionsTab" class="tabcontent">
     <h2>How to Use This Tool</h2>
     <p>
-      1. Check the <strong>Attributes</strong> tab to understand each dimension of the programme.
+      1. Check the <strong>Attributes</strong> tab to learn about each dimension in the DCE.
     </p>
     <p>
-      2. Under <strong>Inputs</strong>, select state (if any), cost-of-living multipliers, cost per session, 
-      accessibility, frequency, method, duration, and type of support.
+      2. On the <strong>Inputs</strong> tab, choose your state (optional), cost-of-living (yes/no), cost per session, 
+      accessibility (local/wider), frequency (weekly/monthly), method (virtual/hybrid), duration (2H/4H), 
+      and support type (community engagement, counselling, VR).
     </p>
     <p>
-      3. Click “Calculate &amp; View Results” to open a new window showing cost-benefit charts, predicted uptake, and optional PDF exports.
+      3. Click “Calculate &amp; View Results” to open a separate window with cost-benefit charts and predicted 
+      programme uptake. You can also “Show Probability Plot” on the “Program Uptake Probability” tab to see 
+      how these attributes affect uptake.
     </p>
     <p>
-      4. You can save your scenario in the <strong>Scenarios</strong> tab to compare multiple configurations side by side.
+      4. The <strong>WTP Results</strong> tab displays a bar chart for the main model, possibly including confidence intervals 
+      and significance where relevant.
     </p>
     <p>
-      5. The <strong>WTP Results</strong> tab visualises willingness to pay (A$) for each attribute in the main DCE model.
-    </p>
-    <p>
-      6. The <strong>Program Uptake Probability</strong> tab lets you generate a bar chart for predicted programme uptake 
-      (based on your current selections).
-    </p>
-    <p>
-      7. The <strong>Costs &amp; Benefits</strong> section highlights the A\$5,000 per 1% improvement assumption and state multipliers.
+      5. Under <strong>Scenarios</strong>, save or compare multiple configurations side by side, generating PDF 
+      exports if desired.
     </p>
   </div>
 
   <!-- Attributes Tab -->
   <div id="attributesTab" class="tabcontent">
     <h2>Programme Attributes</h2>
-    <p><strong>Cost:</strong> The out-of-pocket fee participants incur each session.</p>
-    <p><strong>Accessibility:</strong> Local area vs. wider community, factoring in mobility and distance.</p>
-    <p><strong>Frequency of Interaction:</strong> Daily reference, weekly, monthly, etc.</p>
-    <p><strong>Method of Interaction:</strong> In-person, virtual-only, or hybrid mode.</p>
-    <p><strong>Duration of Each Interaction:</strong> 30 min (reference), 2 hours, 4 hours, etc.</p>
-    <p><strong>Type of Support Programme:</strong> Peer support, community engagement, counselling, VR, etc.</p>
+    <p><strong>Cost per session:</strong> The fee (AUD) participants pay out-of-pocket each time.</p>
+    <p><strong>Accessibility:</strong> Whether the programme is local (up to 12 km) or in a wider community (50+ km), 
+      impacting mobility, transport time, and possible travel barriers.</p>
+    <p><strong>Frequency of Interaction:</strong> Daily is the reference scenario in the DCE; weekly and monthly 
+      are alternates, influencing how often participants engage socially.</p>
+    <p><strong>Method of Interaction:</strong> In-person, fully virtual, or hybrid (both in-person and online), 
+      to cater for mobility, location preferences, and user tech comfort.</p>
+    <p><strong>Duration of Each Interaction:</strong> Ranging from brief 30-min sessions (reference) to 2-hour 
+      or 4-hour extended engagements, which can affect depth of connection and fatigue.</p>
+    <p><strong>Type of Support Programme:</strong> Peer support (reference), community engagement, counselling, 
+      or VR experiences, each offering different levels of social contact and potential benefits.</p>
   </div>
 
   <!-- Inputs Tab -->
   <div id="inputsTab" class="tabcontent">
     <h2>Programme Inputs</h2>
     <p>
-      Specify your scenario’s attributes. Then click “Calculate &amp; View Results” to open a separate window 
-      with cost-benefit charts and predicted uptake.
+      Specify your scenario below, then click “Calculate &amp; View Results” to open a separate cost-benefit 
+      window. Alternatively, use “Show Probability Plot” to directly see the bar chart of predicted uptake 
+      in the “Program Uptake Probability” tab.
     </p>
     <form onsubmit="event.preventDefault();">
       <div class="form-grid">
-
-        <!-- State + CoL -->
         <div class="form-item">
           <label for="state_select">State:</label>
           <select id="state_select">
@@ -120,7 +122,6 @@
           </select>
         </div>
 
-        <!-- Cost slider -->
         <div class="form-item">
           <label>
             Cost per Session (AUD): <span id="costLabel">50</span>
@@ -136,35 +137,30 @@
           />
         </div>
 
-        <!-- Accessibility -->
         <div class="form-item">
           <label><input type="checkbox" id="localCheck" />Local Area (12 km)</label>
           <br/>
           <label><input type="checkbox" id="widerCheck" />Wider Community (50+ km)</label>
         </div>
 
-        <!-- Frequency -->
         <div class="form-item">
           <label><input type="checkbox" id="weeklyCheck" />Weekly</label>
           <br/>
           <label><input type="checkbox" id="monthlyCheck" />Monthly</label>
         </div>
 
-        <!-- Method -->
         <div class="form-item">
           <label><input type="checkbox" id="virtualCheck" />Virtual Only</label>
           <br/>
           <label><input type="checkbox" id="hybridCheck" />Hybrid (In-person &amp; Virtual)</label>
         </div>
 
-        <!-- Duration -->
         <div class="form-item">
           <label><input type="checkbox" id="twoHCheck" />2-Hour Session</label>
           <br/>
           <label><input type="checkbox" id="fourHCheck" />4-Hour Session</label>
         </div>
 
-        <!-- Programme Type -->
         <div class="form-item">
           <label><input type="checkbox" id="commCheck" />Community Engagement</label>
           <br/>
@@ -172,7 +168,6 @@
           <br/>
           <label><input type="checkbox" id="vrCheck" />Virtual Reality</label>
         </div>
-
       </div>
       <div class="buttons-row">
         <button type="button" onclick="openSingleScenario()">Calculate &amp; View Results</button>
@@ -184,7 +179,14 @@
   <div id="wtpTab" class="tabcontent">
     <h2>Willingness to Pay (WTP) Results</h2>
     <p>
-      Click “Show WTP Plot” to view the bar chart summarising the main model’s WTP for each attribute.
+      “Among the programme types, community engagement was the most highly valued, with a WTP of A$14.47 
+      (SE=3.31, p &lt; 0.001). This indicates that older adults are willing to pay A$14.47 for programmes 
+      that foster social interaction and community connections, relative to the reference category of peer 
+      support.”
+    </p>
+    <p>
+      Click “Show WTP Plot” to see the bar chart summarising the main model’s WTP (A$). Future enhancements 
+      may allow for confidence intervals (CIs), p-values, or significance to be overlaid on the bars themselves.
     </p>
     <div class="buttons-row">
       <button onclick="renderWTPChart()">Show WTP Plot</button>
@@ -197,12 +199,13 @@
     </div>
   </div>
 
-  <!-- Single Probability Plot Tab -->
+  <!-- Probability Plot Tab -->
   <div id="probTab" class="tabcontent">
     <h2>Program Uptake Probability</h2>
     <p>
-      Click “Show Probability Plot” to recalculate and display a bar chart for predicted 
-      programme uptake under the main model.
+      Press “Show Probability Plot” to compute and display a bar chart of predicted programme uptake 
+      under the main DCE model. If you adjust attributes in the <strong>Inputs</strong> tab, 
+      re-click this button to see the updated probability.
     </p>
     <div class="buttons-row">
       <button onclick="renderProbChart()">Show Probability Plot</button>
@@ -219,18 +222,24 @@
   <div id="costsTab" class="tabcontent">
     <h2>Cost Components &amp; Benefits</h2>
     <p>
-      This tool assumes a <strong>A\$5,000</strong> benefit for every 1% improvement in programme uptake, 
-      along with cost-of-living multipliers if the user chooses. Costs typically include staff, 
-      facilities, marketing, etc.
+      A <strong>A\$5,000</strong> benefit for each 1% improvement in programme uptake is assumed, 
+      alongside cost-of-living multipliers if the user selects “yes.” Potential costs include:
     </p>
+    <ul>
+      <li>Personnel (staff salaries, volunteers, etc.)</li>
+      <li>Facilities &amp; Equipment (rent, IT services)</li>
+      <li>Marketing &amp; Outreach (advertising, community events)</li>
+      <li>Training &amp; Certification (workshops, materials)</li>
+      <li>Miscellaneous Operational Expenses (transport, admin, refreshments)</li>
+    </ul>
   </div>
 
   <!-- Scenarios Tab -->
   <div id="scenariosTab" class="tabcontent">
     <h2>Saved Scenarios</h2>
     <p>
-      You can save your current scenario under <strong>Inputs</strong> and then compare multiple 
-      scenarios with advanced cost-benefit charts or PDF exports.
+      You can save your scenario from <strong>Inputs</strong>, then compare or export multiple 
+      configurations using advanced cost-benefit visuals or PDF.
     </p>
     <div class="buttons-row">
       <button onclick="saveScenario()">Save Current Scenario</button>
