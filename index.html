@@ -29,22 +29,21 @@
   <div id="introTab" class="tabcontent" style="display: block;">
     <div class="intro-box">
       <p>
-        Loneliness affects over five million Australians, especially older adults, leading 
-        to significant health and economic challenges. This tool draws on a discrete choice 
-        experiment (DCE) to forecast programme uptake probabilities, informing 
-        personalised services grounded in older adults’ priorities.
+        Loneliness affects over five million Australians, especially older adults, 
+        resulting in significant health and economic challenges. This tool uses 
+        discrete choice experiment (DCE) estimates to predict programme uptake 
+        probabilities, enabling personalised services based on the attributes older 
+        adults consider most crucial.
       </p>
-      <p>
-        Navigate with the tabs above:
-      </p>
+      <p>Use the tabs above to navigate:</p>
       <ul>
         <li><strong>Instructions</strong> – Guidance for each tool feature.</li>
-        <li><strong>Attributes</strong> – A detailed description of each DCE attribute.</li>
-        <li><strong>Inputs</strong> – Configure your scenario’s cost, accessibility, etc.</li>
-        <li><strong>WTP Results</strong> – A bar chart of willingness-to-pay (A$) for main model attributes, with possible p-values.</li>
-        <li><strong>Program Uptake Probability</strong> – Dynamically computed bar chart based on your current selections.</li>
-        <li><strong>Costs &amp; Benefits</strong> – Outlines cost-of-living and the A\$5,000 per 1% improvement assumption.</li>
-        <li><strong>Scenarios</strong> – Save your scenarios to compare or export PDF reports with advanced charts.</li>
+        <li><strong>Attributes</strong> – Detailed descriptions of the DCE attributes.</li>
+        <li><strong>Inputs</strong> – Configure your scenario’s cost, accessibility, frequency, etc.</li>
+        <li><strong>WTP Results</strong> – View a bar chart of main model willingness to pay (A$) with standard errors.</li>
+        <li><strong>Program Uptake Probability</strong> – Dynamically computed chart based on your scenario inputs.</li>
+        <li><strong>Costs &amp; Benefits</strong> – Reflects new literature-based cost estimates and QALY gains.</li>
+        <li><strong>Scenarios</strong> – Save multiple scenarios, compare them, or export PDF-based results.</li>
       </ul>
     </div>
   </div>
@@ -53,51 +52,48 @@
   <div id="instructionsTab" class="tabcontent">
     <h2>How to Use This Tool</h2>
     <p>
-      1. Check the <strong>Attributes</strong> tab to learn about each dimension in the DCE.
+      1. Check <strong>Attributes</strong> to understand cost, accessibility, frequency, method, duration, and support types.
     </p>
     <p>
-      2. On the <strong>Inputs</strong> tab, choose your state (optional), cost-of-living (yes/no), cost per session, 
-      accessibility (local/wider), frequency (weekly/monthly), method (virtual/hybrid), duration (2H/4H), 
-      and support type (community engagement, counselling, VR).
+      2. Under <strong>Inputs</strong>, select your state (if any), whether to adjust for cost-of-living, cost per session, 
+      local vs. wider community, weekly vs. monthly, virtual vs. hybrid, session duration, and support type.
     </p>
     <p>
-      3. Click “Calculate &amp; View Results” to open a separate window with cost-benefit charts and predicted 
-      programme uptake. You can also “Show Probability Plot” on the “Program Uptake Probability” tab to see 
-      how these attributes affect uptake.
+      3. Click “Calculate &amp; View Results” to open a new window with cost-benefit charts, QALY gains, and an optional PDF export. 
     </p>
     <p>
-      4. The <strong>WTP Results</strong> tab displays a bar chart for the main model, possibly including confidence intervals 
-      and significance where relevant.
+      4. The <strong>WTP Results</strong> tab displays a bar chart summarising the main model’s willingness to pay (A$) for each attribute.
     </p>
     <p>
-      5. Under <strong>Scenarios</strong>, save or compare multiple configurations side by side, generating PDF 
-      exports if desired.
+      5. The <strong>Program Uptake Probability</strong> tab offers a bar chart for the predicted programme uptake under your current scenario.
+    </p>
+    <p>
+      6. The <strong>Costs &amp; Benefits</strong> tab consolidates realistic cost data (advertisement, training, delivery, 
+      participant time/travel, total cost) and QALY-based benefits (0.02, 0.05, or 0.1 QALYs).
+    </p>
+    <p>
+      7. Under <strong>Scenarios</strong>, you can save or compare multiple configurations side by side.
     </p>
   </div>
 
   <!-- Attributes Tab -->
   <div id="attributesTab" class="tabcontent">
     <h2>Programme Attributes</h2>
-    <p><strong>Cost per session:</strong> The fee (AUD) participants pay out-of-pocket each time.</p>
+    <p><strong>Cost per session:</strong> The out-of-pocket fee (AUD) that participants must pay every time they attend.</p>
     <p><strong>Accessibility:</strong> Whether the programme is local (up to 12 km) or in a wider community (50+ km), 
-      impacting mobility, transport time, and possible travel barriers.</p>
-    <p><strong>Frequency of Interaction:</strong> Daily is the reference scenario in the DCE; weekly and monthly 
-      are alternates, influencing how often participants engage socially.</p>
-    <p><strong>Method of Interaction:</strong> In-person, fully virtual, or hybrid (both in-person and online), 
-      to cater for mobility, location preferences, and user tech comfort.</p>
-    <p><strong>Duration of Each Interaction:</strong> Ranging from brief 30-min sessions (reference) to 2-hour 
-      or 4-hour extended engagements, which can affect depth of connection and fatigue.</p>
-    <p><strong>Type of Support Programme:</strong> Peer support (reference), community engagement, counselling, 
-      or VR experiences, each offering different levels of social contact and potential benefits.</p>
+      factoring in mobility, transport cost, and convenience.</p>
+    <p><strong>Frequency of Interaction:</strong> Daily (reference), weekly, or monthly, influencing how often participants engage socially.</p>
+    <p><strong>Method of Interaction:</strong> In-person, virtual, or hybrid, reflecting user preferences, technology access, and mobility considerations.</p>
+    <p><strong>Duration of Each Interaction:</strong> 30 min (reference), 2-hour, or 4-hour sessions, affecting the depth of interactions and scheduling needs.</p>
+    <p><strong>Type of Support Programme:</strong> Peer support (reference), community engagement, psychological counselling, or VR-based sessions.</p>
   </div>
 
   <!-- Inputs Tab -->
   <div id="inputsTab" class="tabcontent">
     <h2>Programme Inputs</h2>
     <p>
-      Specify your scenario below, then click “Calculate &amp; View Results” to open a separate cost-benefit 
-      window. Alternatively, use “Show Probability Plot” to directly see the bar chart of predicted uptake 
-      in the “Program Uptake Probability” tab.
+      Configure your scenario. Then click “Calculate &amp; View Results” for a new cost-benefit window, 
+      or “Show Probability Plot” under the “Program Uptake Probability” tab to see a dynamic bar chart.
     </p>
     <form onsubmit="event.preventDefault();">
       <div class="form-grid">
@@ -179,14 +175,16 @@
   <div id="wtpTab" class="tabcontent">
     <h2>Willingness to Pay (WTP) Results</h2>
     <p>
-      “Among the programme types, community engagement was the most highly valued, with a WTP of A$14.47 
-      (SE=3.31, p &lt; 0.001). This indicates that older adults are willing to pay A$14.47 for programmes 
-      that foster social interaction and community connections, relative to the reference category of peer 
-      support.”
+      The willingness-to-pay (WTP) for each program feature is calculated by taking the ratio 
+      of the feature’s coefficient to the negative of the cost coefficient. This metric 
+      quantifies the monetary value respondents place on each program feature, holding other 
+      factors constant.
     </p>
     <p>
-      Click “Show WTP Plot” to see the bar chart summarising the main model’s WTP (A$). Future enhancements 
-      may allow for confidence intervals (CIs), p-values, or significance to be overlaid on the bars themselves.
+      For example, among the programme types, community engagement is the most highly valued, 
+      with a WTP of A$14.47 (SE=3.31, p &lt; 0.001). This shows older adults are willing to pay 
+      an additional A$14.47 for community-based programmes, compared to the reference peer 
+      support scenario.
     </p>
     <div class="buttons-row">
       <button onclick="renderWTPChart()">Show WTP Plot</button>
@@ -203,9 +201,10 @@
   <div id="probTab" class="tabcontent">
     <h2>Program Uptake Probability</h2>
     <p>
-      Press “Show Probability Plot” to compute and display a bar chart of predicted programme uptake 
-      under the main DCE model. If you adjust attributes in the <strong>Inputs</strong> tab, 
-      re-click this button to see the updated probability.
+      Click “Show Probability Plot” to compute a new bar chart based on your <strong>Inputs</strong>. 
+      Depending on whether the predicted uptake is below 30%, between 30–70%, or above 70%, 
+      you will receive suggestions on possible adjustments (e.g., lowering cost or adding 
+      community engagement features) that could increase uptake.
     </p>
     <div class="buttons-row">
       <button onclick="renderProbChart()">Show Probability Plot</button>
@@ -220,26 +219,51 @@
 
   <!-- Costs & Benefits Tab -->
   <div id="costsTab" class="tabcontent">
-    <h2>Cost Components &amp; Benefits</h2>
+    <h2>Costs &amp; Benefits</h2>
     <p>
-      A <strong>A\$5,000</strong> benefit for each 1% improvement in programme uptake is assumed, 
-      alongside cost-of-living multipliers if the user selects “yes.” Potential costs include:
+      <strong>Literature-Based Estimates of QALY Gains</strong>:
+      <ul>
+        <li>Masi et al. (2011): Social interventions can reduce loneliness and improve mental health, implying QALY gains.</li>
+        <li>Eaton et al. (2010): 0.05 QALYs per participant over five years.</li>
+        <li>PRISM Trial (Shankar et al., 2017): 0.03–0.07 QALYs per participant over three years.</li>
+        <li>OECD (2011): 0.02–0.1 QALYs per participant, depending on intervention.</li>
+      </ul>
+      We implement three scenarios for QALY gains per participant:
+      <strong>Low = 0.02 QALYs</strong>, <strong>Moderate = 0.05 QALYs</strong>, and <strong>High = 0.1 QALYs</strong>.
     </p>
-    <ul>
-      <li>Personnel (staff salaries, volunteers, etc.)</li>
-      <li>Facilities &amp; Equipment (rent, IT services)</li>
-      <li>Marketing &amp; Outreach (advertising, community events)</li>
-      <li>Training &amp; Certification (workshops, materials)</li>
-      <li>Miscellaneous Operational Expenses (transport, admin, refreshments)</li>
-    </ul>
+    <p>
+      <strong>Monetization of QALY Gains</strong>:
+      Each QALY is valued at A$50,000. 
+      Multiply the total QALY gains by this value to determine monetised benefits. 
+    </p>
+    <p>
+      <strong>Realistic Cost Data</strong>:
+      <ul>
+        <li><strong>Advertisement &amp; Recruitment:</strong> A$8,127.60 total (newspaper ads, leaflets, postage, admin personnel).</li>
+        <li><strong>Training Facilitators:</strong> A$10,000.00 (covering five-hour sessions for 100 facilitators).</li>
+        <li><strong>Delivery Costs:</strong> A$32,000.00 (facilitator salaries, materials, venue hire).</li>
+        <li><strong>Participant Time &amp; Travel:</strong> A$7,500.00 (time cost plus local travel expenses).</li>
+        <li><strong>Total Intervention Cost (Base):</strong> A$55,627.60, at ~A$20.00 per person for 2-hour sessions across 100 groups.</li>
+      </ul>
+      This base cost is scaled dynamically by the predicted programme uptake (8% to 90%). 
+      For instance, if predicted uptake is 50%, total costs are proportionally A$27,813.80 
+      (assuming fewer participants leads to reduced material &amp; delivery costs).
+    </p>
+    <p>
+      <strong>Integration with Program Uptake Probability</strong>:
+      If you select more attractive features (e.g., community engagement, which has a WTP of A$14.47), 
+      uptake probabilities are likely higher, increasing total costs but also enhancing QALY gains.
+      Conversely, VR (WTP -A$9.58) may yield lower uptake, reducing total costs but also lowering QALY 
+      improvements overall.
+    </p>
   </div>
 
   <!-- Scenarios Tab -->
   <div id="scenariosTab" class="tabcontent">
     <h2>Saved Scenarios</h2>
     <p>
-      You can save your scenario from <strong>Inputs</strong>, then compare or export multiple 
-      configurations using advanced cost-benefit visuals or PDF.
+      Save your scenario from <strong>Inputs</strong> and compare or export multiple configurations, 
+      including cost-benefit charts, to PDF.
     </p>
     <div class="buttons-row">
       <button onclick="saveScenario()">Save Current Scenario</button>
