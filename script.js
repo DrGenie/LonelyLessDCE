@@ -1,8 +1,8 @@
 /* ===================================================
    LonelyLessAustralia Decision Aid – script.js
-   Premium, STEPS-style DCE + CBA logic
-   NOTE: Coefficients below are placeholders – replace
-   with LonelyLess DCE estimates before use in practice.
+   Updated to use main DCE coefficients and WTP values
+   (no major omissions; attribute names and estimates
+   now match the main mixed logit model)
    =================================================== */
 
 (() => {
@@ -11,10 +11,9 @@
      =========================== */
 
   const state = {
-    modelKey: "average",           // "average" | "supportive" | "conservative"
-    currency: "AUD",               // "AUD" | "USD" (display only)
-    includeOppCost: true,
-    scenarios: [],
+    currency: "AUD",                // Currency display (AUD by default)
+    includeOppCost: true,           // Include opportunity cost in totals
+    scenarios: [],                  // Saved scenarios
     charts: {
       uptake: null,
       bcr: null,
@@ -22,125 +21,64 @@
       natCostBenefit: null,
       natEpi: null
     },
-    lastResults: null
+    lastResults: null,
+    modelLabel: "Main sample (mixed logit)" // Label for model column
   };
 
-  /* ===========================
-     Placeholder DCE models
-     Replace with LonelyLess estimates
-     =========================== */
+  /***************************************************************************
+   * Main DCE Coefficients & Cost Multipliers
+   * (from main LonelyLess mixed logit model)
+   ***************************************************************************/
 
-  // Units: utilities are logit coefficients; costPer100 is per 100 AUD/participant/month
-  const MODELS = {
-    average: {
-      label: "Average preference model",
-      ascProgram: 0.25,
-      ascOptOut: -0.5,
-      tier: {
-        frontline: 0.0,      // e.g. light-touch programme
-        intermediate: 0.25,  // moderate support
-        advanced: 0.5        // intensive support
-      },
-      career: {
-        certificate: 0.0,    // e.g. generic community service
-        uniqual: 0.1,        // health or social care integration
-        career_path: 0.2     // strong integration with health & social care
-      },
-      mentorship: {
-        low: 0.0,
-        medium: 0.35,
-        high: 0.6
-      },
-      delivery: {
-        blended: 0.2,        // mixed home / community / online
-        inperson: 0.15,
-        online: -0.2
-      },
-      response: {
-        30: 0.0,             // e.g. slow impact on loneliness
-        15: 0.3,
-        7: 0.55              // faster reduction in loneliness
-      },
-      costPer100: -0.02      // more negative = more cost-sensitive
-    },
-    supportive: {
-      label: "Supportive group",
-      ascProgram: 0.4,
-      ascOptOut: -1.0,
-      tier: {
-        frontline: 0.0,
-        intermediate: 0.35,
-        advanced: 0.7
-      },
-      career: {
-        certificate: 0.0,
-        uniqual: 0.15,
-        career_path: 0.25
-      },
-      mentorship: {
-        low: 0.0,
-        medium: 0.45,
-        high: 0.75
-      },
-      delivery: {
-        blended: 0.25,
-        inperson: 0.15,
-        online: -0.3
-      },
-      response: {
-        30: 0.0,
-        15: 0.35,
-        7: 0.7
-      },
-      costPer100: -0.03
-    },
-    conservative: {
-      label: "More cautious group",
-      ascProgram: 0.1,
-      ascOptOut: 0.5,
-      tier: {
-        frontline: 0.0,
-        intermediate: 0.1,
-        advanced: 0.15
-      },
-      career: {
-        certificate: 0.0,
-        uniqual: 0.05,
-        career_path: 0.1
-      },
-      mentorship: {
-        low: 0.0,
-        medium: 0.2,
-        high: 0.35
-      },
-      delivery: {
-        blended: 0.1,
-        inperson: 0.0,
-        online: -0.15
-      },
-      response: {
-        30: 0.0,
-        15: 0.2,
-        7: 0.3
-      },
-      costPer100: -0.01      // weaker cost sensitivity
-    }
+  const mainCoefficients = {
+    ASC_mean: -0.112,
+    ASC_sd: 1.161,
+    ASC_optout: 0.131,
+    type_comm: 0.527,
+    type_psych: 0.156,
+    type_vr: -0.349,
+    mode_virtual: -0.426,
+    mode_hybrid: -0.289,
+    freq_weekly: 0.617,
+    freq_monthly: 0.336,
+    dur_2hrs: 0.185,
+    dur_4hrs: 0.213,
+    dist_local: 0.059,
+    dist_signif: -0.509,
+    cost_cont: -0.036
   };
 
-  // Length of intervention (months) by programme tier
-  function getDurationMonths(tier) {
-    if (tier === "intermediate") return 6;
-    if (tier === "advanced") return 12;
-    return 3; // frontline / light-touch
-  }
+  const costOfLivingMultipliers = {
+    NSW: 1.10,
+    VIC: 1.05,
+    QLD: 1.00,
+    WA: 1.08,
+    SA: 1.02,
+    TAS: 1.03,
+    ACT: 1.15,
+    NT: 1.07
+  };
 
-  // Opp. cost as share of direct programme cost (placeholder)
-  function getOppCostRate() {
-    return 0.2; // 20% – adjust as needed
-  }
+  /***************************************************************************
+   * WTP Data (AUD per person per month)
+   ***************************************************************************/
+
+  const wtpDataMain = [
+    { attribute: "Community engagement", wtp: 14.47, pVal: 0.000, se: 3.31 },
+    { attribute: "Psychological counselling", wtp: 4.28, pVal: 0.245, se: 3.76 },
+    { attribute: "Virtual reality", wtp: -9.58, pVal: 0.009, se: 3.72 },
+    { attribute: "Virtual (method)", wtp: -11.69, pVal: 0.019, se: 5.02 },
+    { attribute: "Hybrid (method)", wtp: -7.95, pVal: 0.001, se: 2.51 },
+    { attribute: "Weekly (freq)", wtp: 16.93, pVal: 0.000, se: 2.73 },
+    { attribute: "Monthly (freq)", wtp: 9.21, pVal: 0.005, se: 3.26 },
+    { attribute: "2-hour interaction", wtp: 5.08, pVal: 0.059, se: 2.69 },
+    { attribute: "4-hour interaction", wtp: 5.85, pVal: 0.037, se: 2.79 },
+    { attribute: "Local area accessibility", wtp: 1.62, pVal: 0.712, se: 4.41 },
+    { attribute: "Wider community accessibility", wtp: -13.99, pVal: 0.000, se: 3.98 }
+  ];
 
   /* ===========================
-     Utility and endorsement
+     Helpers
      =========================== */
 
   function logistic(x) {
@@ -149,33 +87,146 @@
     return 1 / (1 + Math.exp(-x));
   }
 
-  function getModel() {
-    if (state.modelKey === "supportive") return MODELS.supportive;
-    if (state.modelKey === "conservative") return MODELS.conservative;
-    return MODELS.average;
+  function wtpFor(attributeName) {
+    const row = wtpDataMain.find(d => d.attribute === attributeName);
+    return row ? row.wtp : 0;
   }
 
-  function computeDesignUtility(cfg, model) {
-    const uTier = model.tier[cfg.tier] || 0;
-    const uCareer = model.career[cfg.career] || 0;
-    const uMentor = model.mentorship[cfg.mentorship] || 0;
-    const uDelivery = model.delivery[cfg.delivery] || 0;
-    const uResponse = model.response[cfg.response] || 0;
-    return uTier + uCareer + uMentor + uDelivery + uResponse;
+  /* ===========================
+     Read configuration from form
+     =========================== */
+
+  function readConfigurationFromInputs() {
+    // Service type: community / psychology / VR
+    const serviceType =
+      (document.getElementById("service-type") || {}).value || "comm"; // "comm" | "psych" | "vr"
+
+    // Delivery method: in-person / virtual / hybrid
+    const mode =
+      (document.getElementById("mode") || {}).value || "inperson"; // "inperson" | "virtual" | "hybrid"
+
+    // Participation frequency: weekly / fortnightly / monthly
+    const frequency =
+      (document.getElementById("frequency") || {}).value || "weekly"; // "weekly" | "fortnightly" | "monthly"
+
+    // Session duration: 1hr / 2hrs / 4hrs
+    const duration =
+      (document.getElementById("duration") || {}).value || "2hrs"; // "1hr" | "2hrs" | "4hrs"
+
+    // Accessibility / distance: local vs wider community
+    const distance =
+      (document.getElementById("distance") || {}).value || "local"; // "local" | "wider"
+
+    // Region / state for cost-of-living adjustment
+    const regionEl = document.getElementById("region-select");
+    const region = regionEl ? regionEl.value || "NSW" : "NSW";
+    const multiplier = costOfLivingMultipliers[region] || 1.0;
+
+    // Base cost from slider (AUD per person per month, before regional adjustment)
+    const costSlider = document.getElementById("cost-slider");
+    const baseCost =
+      costSlider ? parseFloat(costSlider.value) || 0 : 0;
+
+    const costPerParticipantPerMonth = baseCost * multiplier;
+
+    // Scale: number of participants and groups
+    const participantsInput = document.getElementById("trainees");
+    const groupsInput = document.getElementById("cohorts");
+
+    const participantsPerGroup = participantsInput
+      ? parseInt(participantsInput.value, 10) || 0
+      : 0;
+
+    const numberOfGroups = groupsInput
+      ? parseInt(groupsInput.value, 10) || 0
+      : 0;
+
+    // Programme horizon in months (optional input)
+    const monthsInput = document.getElementById("programme-months");
+    let programmeMonths = 12;
+    if (monthsInput) {
+      const mv = parseFloat(monthsInput.value);
+      if (!isNaN(mv) && mv > 0) programmeMonths = mv;
+    }
+
+    const nameInput = document.getElementById("scenario-name");
+    const notesInput = document.getElementById("scenario-notes");
+
+    return {
+      serviceType,           // comm / psych / vr
+      mode,                  // inperson / virtual / hybrid
+      frequency,             // weekly / fortnightly / monthly
+      duration,              // 1hr / 2hrs / 4hrs
+      distance,              // local / wider
+      region,                // NSW, VIC, ...
+      baseCostPerParticipantPerMonth: baseCost,
+      costPerParticipantPerMonth,    // adjusted for region
+      participantsPerGroup,
+      numberOfGroups,
+      programmeMonths,
+      scenarioName: nameInput ? nameInput.value.trim() : "",
+      scenarioNotes: notesInput ? notesInput.value.trim() : ""
+    };
+  }
+
+  /* ===========================
+     DCE utility and endorsement
+     =========================== */
+
+  function computeAttributeUtility(cfg) {
+    let u = 0;
+
+    // Service type
+    if (cfg.serviceType === "comm") {
+      u += mainCoefficients.type_comm;
+    } else if (cfg.serviceType === "psych") {
+      u += mainCoefficients.type_psych;
+    } else if (cfg.serviceType === "vr") {
+      u += mainCoefficients.type_vr;
+    }
+
+    // Delivery method (reference: in-person)
+    if (cfg.mode === "virtual") {
+      u += mainCoefficients.mode_virtual;
+    } else if (cfg.mode === "hybrid") {
+      u += mainCoefficients.mode_hybrid;
+    }
+
+    // Frequency (reference: fortnightly or base)
+    if (cfg.frequency === "weekly") {
+      u += mainCoefficients.freq_weekly;
+    } else if (cfg.frequency === "monthly") {
+      u += mainCoefficients.freq_monthly;
+    }
+
+    // Duration (reference: 1 hour)
+    if (cfg.duration === "2hrs") {
+      u += mainCoefficients.dur_2hrs;
+    } else if (cfg.duration === "4hrs") {
+      u += mainCoefficients.dur_4hrs;
+    }
+
+    // Accessibility / distance (reference: closest/standard)
+    if (cfg.distance === "local") {
+      u += mainCoefficients.dist_local;
+    } else if (cfg.distance === "wider") {
+      u += mainCoefficients.dist_signif;
+    }
+
+    return u;
   }
 
   function computeEndorsement(cfg) {
-    const model = getModel();
-    const base = computeDesignUtility(cfg, model);
-    const ascProg = typeof model.ascProgram === "number" ? model.ascProgram : 0;
-    const ascOpt = typeof model.ascOptOut === "number" ? model.ascOptOut : 0;
-    const costPer100 = model.costPer100 || 0;
+    const baseUtility = computeAttributeUtility(cfg);
 
-    const costHundreds = cfg.costPerParticipantPerMonth / 100;
-    const costTerm = costPer100 * costHundreds;
+    const ascProg = mainCoefficients.ASC_mean || 0;
+    const ascOpt = mainCoefficients.ASC_optout || 0;
+    const costBeta = mainCoefficients.cost_cont || 0;
 
-    const U_prog = ascProg + base + costTerm;
-    const U_opt = ascOpt; // status quo
+    const costTerm = costBeta * cfg.costPerParticipantPerMonth;
+
+    const U_prog = ascProg + baseUtility + costTerm;
+    const U_opt = ascOpt;
 
     const expP = Math.exp(U_prog);
     const expO = Math.exp(U_opt);
@@ -187,8 +238,7 @@
     return {
       endorseProb,
       optoutProb,
-      model,
-      baseUtility: base,
+      baseUtility,
       ascProg,
       ascOpt,
       costTerm
@@ -196,32 +246,51 @@
   }
 
   /* ===========================
-     WTP (placeholder implementation)
+     Scenario-level WTP
+     (sum of WTP for included attributes)
      =========================== */
 
-  function computeWtpPerParticipantPerMonth(cfg, model) {
-    const costPer100 = model.costPer100 || 0;
-    if (!costPer100) return null;
+  function computeWtpPerParticipantPerMonth(cfg) {
+    let wtp = 0;
 
-    // Utility difference between this configuration and a notional "baseline"
-    const baselineCfg = {
-      tier: "frontline",
-      career: "certificate",
-      mentorship: "low",
-      delivery: "blended",
-      response: "30",
-      costPerParticipantPerMonth: cfg.costPerParticipantPerMonth
-    };
+    // Service type
+    if (cfg.serviceType === "comm") {
+      wtp += wtpFor("Community engagement");
+    } else if (cfg.serviceType === "psych") {
+      wtp += wtpFor("Psychological counselling");
+    } else if (cfg.serviceType === "vr") {
+      wtp += wtpFor("Virtual reality");
+    }
 
-    const uCurrent = computeDesignUtility(cfg, model);
-    const uBase = computeDesignUtility(baselineCfg, model);
-    const delta = uCurrent - uBase;
+    // Delivery method
+    if (cfg.mode === "virtual") {
+      wtp += wtpFor("Virtual (method)");
+    } else if (cfg.mode === "hybrid") {
+      wtp += wtpFor("Hybrid (method)");
+    }
 
-    // WTP in units of 100 AUD/participant/month
-    const wtpPer100 = -delta / costPer100;
-    const wtp = wtpPer100 * 100;
+    // Frequency
+    if (cfg.frequency === "weekly") {
+      wtp += wtpFor("Weekly (freq)");
+    } else if (cfg.frequency === "monthly") {
+      wtp += wtpFor("Monthly (freq)");
+    }
 
-    if (!isFinite(wtp)) return null;
+    // Duration
+    if (cfg.duration === "2hrs") {
+      wtp += wtpFor("2-hour interaction");
+    } else if (cfg.duration === "4hrs") {
+      wtp += wtpFor("4-hour interaction");
+    }
+
+    // Accessibility
+    if (cfg.distance === "local") {
+      wtp += wtpFor("Local area accessibility");
+    } else if (cfg.distance === "wider") {
+      wtp += wtpFor("Wider community accessibility");
+    }
+
+    // WTP is in AUD per person per month
     return wtp;
   }
 
@@ -229,31 +298,33 @@
      Cost and benefit calculations
      =========================== */
 
+  function getOppCostRate() {
+    // Opportunity cost as share of direct programme cost
+    return state.includeOppCost ? 0.2 : 0.0; // 20% default
+  }
+
   function computeCostsAndBenefits(cfg) {
     const util = computeEndorsement(cfg);
-    const model = util.model;
 
-    const durationMonths = getDurationMonths(cfg.tier);
+    const durationMonths = cfg.programmeMonths || 12;
     const participantsPerGroup = cfg.participantsPerGroup;
     const groups = cfg.numberOfGroups;
 
+    // Direct programme cost per group over full horizon
     const directCostPerGroup =
       cfg.costPerParticipantPerMonth * participantsPerGroup * durationMonths;
 
+    // Opportunity cost
     const oppRate = getOppCostRate();
-    const oppCostPerGroup = state.includeOppCost
-      ? directCostPerGroup * oppRate
-      : 0;
+    const oppCostPerGroup = directCostPerGroup * oppRate;
 
     const totalEconomicCostPerGroup = directCostPerGroup + oppCostPerGroup;
     const totalCostAllGroups = totalEconomicCostPerGroup * groups;
 
-    const wtpPerParticipantPerMonth = computeWtpPerParticipantPerMonth(
-      cfg,
-      model
-    );
-    let totalWtpAllGroups = null;
+    // WTP per participant per month from main WTP estimates
+    const wtpPerParticipantPerMonth = computeWtpPerParticipantPerMonth(cfg);
     let wtpPerGroup = null;
+    let totalWtpAllGroups = null;
 
     if (typeof wtpPerParticipantPerMonth === "number") {
       wtpPerGroup =
@@ -318,7 +389,7 @@
       return "-";
 
     if (state.currency === "USD") {
-      const rate = 1.5; // placeholder AUD per USD – adjust in advanced settings if needed
+      const rate = 1.5; // placeholder AUD per USD
       const valueUsd = valueInAud / rate;
       return `USD ${valueUsd.toLocaleString("en-US", {
         maximumFractionDigits: 1,
@@ -359,75 +430,70 @@
   }
 
   /* ===========================
-     Read configuration from form
+     Pretty labels
      =========================== */
 
-  function readConfigurationFromInputs() {
-    const tier = (document.getElementById("program-tier") || {}).value || "frontline";
-    const career = (document.getElementById("career-track") || {}).value || "certificate";
-    const mentorship = (document.getElementById("mentorship") || {}).value || "low";
-    const delivery = (document.getElementById("delivery") || {}).value || "blended";
-    const response = (document.getElementById("response") || {}).value || "30";
+  function prettyServiceType(t) {
+    if (t === "psych") return "Psychological counselling";
+    if (t === "vr") return "Virtual reality";
+    return "Community engagement";
+  }
 
-    const costSlider = document.getElementById("cost-slider");
-    const participantsInput = document.getElementById("trainees");
-    const groupsInput = document.getElementById("cohorts");
+  function prettyMode(m) {
+    if (m === "virtual") return "Virtual delivery";
+    if (m === "hybrid") return "Hybrid (online and in person)";
+    return "In-person sessions";
+  }
 
-    const costPerParticipantPerMonth = costSlider
-      ? parseFloat(costSlider.value) || 0
-      : 0;
+  function prettyFrequency(f) {
+    if (f === "weekly") return "Weekly participation";
+    if (f === "monthly") return "Monthly participation";
+    return "Fortnightly participation";
+  }
 
-    const participantsPerGroup = participantsInput
-      ? parseInt(participantsInput.value, 10) || 0
-      : 0;
+  function prettyDuration(d) {
+    if (d === "1hr") return "1-hour sessions";
+    if (d === "4hrs") return "4-hour sessions";
+    return "2-hour sessions";
+  }
 
-    const numberOfGroups = groupsInput
-      ? parseInt(groupsInput.value, 10) || 0
-      : 0;
-
-    const nameInput = document.getElementById("scenario-name");
-    const notesInput = document.getElementById("scenario-notes");
-
-    return {
-      tier,
-      career,
-      mentorship,
-      delivery,
-      response,
-      costPerParticipantPerMonth,
-      participantsPerGroup,
-      numberOfGroups,
-      scenarioName: nameInput ? nameInput.value.trim() : "",
-      scenarioNotes: notesInput ? notesInput.value.trim() : ""
-    };
+  function prettyDistance(d) {
+    if (d === "wider") return "Wider community locations";
+    return "Local area / nearby locations";
   }
 
   /* ===========================
-     Update UI – configuration summary
+     Configuration summary UI
      =========================== */
 
   function updateConfigSummary(results) {
     const cfg = results.cfg;
-
     const summaryEl = document.getElementById("config-summary");
     if (!summaryEl) return;
 
     summaryEl.innerHTML = "";
 
     const rows = [
-      ["Programme intensity", prettyTier(cfg.tier)],
-      ["Delivery mode", prettyDelivery(cfg.delivery)],
-      ["Support intensity", prettyMentorship(cfg.mentorship)],
-      ["Time to noticeable impact", prettyResponse(cfg.response)],
+      ["Programme type", prettyServiceType(cfg.serviceType)],
+      ["Delivery method", prettyMode(cfg.mode)],
+      ["Participation frequency", prettyFrequency(cfg.frequency)],
+      ["Session length", prettyDuration(cfg.duration)],
+      ["Accessibility", prettyDistance(cfg.distance)],
+      ["Region (cost-of-living)", cfg.region],
       ["Participants per group", formatNumber(cfg.participantsPerGroup)],
       ["Number of groups", formatNumber(cfg.numberOfGroups)],
+      ["Programme horizon", `${formatNumber(cfg.programmeMonths, 0)} months`],
       [
         "Cost per participant per month",
-        formatCurrency(cfg.costPerParticipantPerMonth)
+        `${formatCurrency(cfg.costPerParticipantPerMonth)} (adjusted)`
+      ],
+      [
+        "Base cost (before regional adjustment)",
+        formatCurrency(cfg.baseCostPerParticipantPerMonth)
       ],
       [
         "Model",
-        getModel().label
+        state.modelLabel
       ]
     ];
 
@@ -474,7 +540,7 @@
 
     headline.textContent =
       results.bcr === null
-        ? "Set a configuration to see whether the benefits of the programme are likely to justify the costs under the current assumptions."
+        ? "Configure the intervention and cost assumptions to see whether the benefits of reducing loneliness are likely to justify the costs."
         : `With an estimated endorsement of ${formatPercent(
             results.util.endorseProb,
             1
@@ -487,52 +553,43 @@
           } balance between value and cost.`;
 
     briefing.textContent =
-      `In this scenario, a ${prettyTier(cfg.tier)} programme delivered ` +
-      `${prettyDelivery(cfg.delivery)} with ${prettyMentorship(
-        cfg.mentorship
-      )} support is offered to ${formatNumber(
-        cfg.participantsPerGroup
-      )} participants in each group across ${formatNumber(
-        cfg.numberOfGroups
-      )} groups. The estimated endorsement rate among stakeholders is ${formatPercent(
+      `In this scenario, a ${prettyServiceType(
+        cfg.serviceType
+      ).toLowerCase()} programme is delivered as ${prettyMode(
+        cfg.mode
+      ).toLowerCase()} with ${prettyFrequency(
+        cfg.frequency
+      ).toLowerCase()} ${prettyDuration(
+        cfg.duration
+      ).toLowerCase()} in ${prettyDistance(
+        cfg.distance
+      ).toLowerCase()}. It targets ${formatNumber(
+        cfg.participantsPerGroup,
+        0
+      )} participants per group across ${formatNumber(
+        cfg.numberOfGroups,
+        0
+      )} groups over ${formatNumber(
+        cfg.programmeMonths,
+        0
+      )} months. ` +
+      `The main DCE model implies that around ${formatPercent(
         results.util.endorseProb,
         1
-      )}. ` +
-      `Total economic costs over the whole programme are approximately ${formatCurrency(
+      )} of older adults would be willing to take up this offer at a cost of ${formatCurrency(
+        cfg.costPerParticipantPerMonth
+      )} per person per month (after adjusting for cost-of-living in ${cfg.region}). ` +
+      `Total economic costs are approximately ${formatCurrency(
         results.totalCostAllGroups
-      )}, while preference-based willingness-to-pay benefits are around ${formatCurrency(
+      )}, while preference-based benefits are around ${formatCurrency(
         results.totalWtpAllGroups || 0
-      )}, implying a benefit–cost ratio of ${
+      )}, giving a benefit–cost ratio of ${
         results.bcr ? results.bcr.toFixed(2) : "-"
       } under the current assumptions.`;
   }
 
-  function prettyTier(tier) {
-    if (tier === "intermediate") return "moderate-intensity programme";
-    if (tier === "advanced") return "high-intensity programme";
-    return "light-touch programme";
-  }
-
-  function prettyDelivery(d) {
-    if (d === "inperson") return "in-person in community settings";
-    if (d === "online") return "fully online";
-    return "blended across home, community and online";
-  }
-
-  function prettyMentorship(m) {
-    if (m === "high") return "high level of structured contact";
-    if (m === "medium") return "moderate contact and follow-up";
-    return "lighter-touch contact";
-  }
-
-  function prettyResponse(r) {
-    if (String(r) === "7") return "within around 2 months";
-    if (String(r) === "15") return "within 3–6 months";
-    return "over a longer period";
-  }
-
   /* ===========================
-     Update UI – results tab
+     Results tab
      =========================== */
 
   function updateResultsTab(results) {
@@ -546,7 +603,7 @@
       "wtp-per-trainee",
       results.wtpPerParticipantPerMonth === null
         ? "-"
-        : formatCurrency(results.wtpPerParticipantPerMonth)
+        : formatCurrency(results.wtpPerParticipantPerMonth, 1)
     );
     setText(
       "wtp-total-cohort",
@@ -575,7 +632,7 @@
       results.bcr === null ? "-" : results.bcr.toFixed(2)
     );
 
-    // Simple “epidemiological” panel interpreted as reach
+    // Reach and endorsement (interpreted as community reach)
     const totalParticipants =
       results.cfg.participantsPerGroup * results.cfg.numberOfGroups;
     const endorsedParticipants =
@@ -600,7 +657,7 @@
   }
 
   /* ===========================
-     Charts with Chart.js
+     Charts (Chart.js)
      =========================== */
 
   function updateCharts(results) {
@@ -664,8 +721,10 @@
             y: {
               ticks: {
                 callback(value) {
-                  return value >= 1000
-                    ? (value / 1000000).toFixed(1) + "m"
+                  return value >= 1_000_000
+                    ? (value / 1_000_000).toFixed(1) + "m"
+                    : value >= 1_000
+                    ? (value / 1_000).toFixed(1) + "k"
                     : value;
                 }
               }
@@ -685,7 +744,7 @@
       });
     }
 
-    // “Epidemiological” chart interpreted as reach
+    // Reach chart (interpreted as participants reached)
     const epiCtx = document.getElementById("chart-epi");
     if (epiCtx) {
       if (state.charts.epi) state.charts.epi.destroy();
@@ -763,10 +822,10 @@
       const ppg = results.cfg.participantsPerGroup;
 
       const shares = [
-        { id: "facilitator", label: "Facilitators and staff time", share: 0.45 },
-        { id: "venue", label: "Venue and overheads", share: 0.25 },
-        { id: "materials", label: "Materials and digital tools", share: 0.15 },
-        { id: "coordination", label: "Coordination and management", share: 0.15 }
+        { label: "Facilitators and staff time", share: 0.45 },
+        { label: "Venue and overheads", share: 0.25 },
+        { label: "Materials and digital tools", share: 0.15 },
+        { label: "Coordination and management", share: 0.15 }
       ];
 
       shares.forEach(comp => {
@@ -782,7 +841,7 @@
           <td>${(comp.share * 100).toFixed(0)} %</td>
           <td class="numeric-cell">${formatCurrency(amountPerGroup)}</td>
           <td class="numeric-cell">${formatCurrency(perParticipantPerMonth)}</td>
-          <td>Share of direct programme cost (illustrative split).</td>
+          <td>Illustrative share of direct programme cost (can be refined for specific implementations).</td>
         `;
         tbody.appendChild(tr);
       });
@@ -828,7 +887,7 @@
         )} older adults, with approximately ${formatNumber(
           endorsedParticipants,
           0
-        )} receiving the endorsed configuration given current preferences. ` +
+        )} participating in the endorsed configuration given current preferences. ` +
         `Total economic costs are about ${formatCurrency(
           totalCost
         )}, with preference-based benefits of ${formatCurrency(
@@ -885,11 +944,6 @@
   /* ===========================
      Sensitivity / DCE benefits tab
      =========================== */
-
-  function getBenefitDefinition() {
-    const sel = document.getElementById("benefit-definition-select");
-    return sel ? sel.value : "wtp_only";
-  }
 
   function updateSensitivityTab() {
     const baseResults = state.lastResults;
@@ -957,7 +1011,7 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${sc.label}</td>
-          <td>${getModel().label}</td>
+          <td>${state.modelLabel}</td>
           <td class="numeric-col">${formatPercent(endRate, 1)}</td>
           <td class="numeric-col">${formatCurrency(costPerGroup)}</td>
           <td class="numeric-col">${formatCurrency(totalWtp || 0)}</td>
@@ -1010,28 +1064,29 @@
     tbody.innerHTML = "";
     state.scenarios.forEach(s => {
       const r = s.results;
+      const cfg = r.cfg;
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><input type="checkbox" /></td>
         <td>${s.name}</td>
         <td>
-          <span class="chip chip-tier">${prettyTier(r.cfg.tier)}</span>
-          <span class="chip chip-mentorship">${prettyMentorship(r.cfg.mentorship)}</span>
+          <span class="chip chip-tier">${prettyServiceType(cfg.serviceType)}</span>
+          <span class="chip chip-mentorship">${prettyFrequency(cfg.frequency)}</span>
         </td>
-        <td>${r.cfg.tier}</td>
-        <td>${r.cfg.career}</td>
-        <td>${r.cfg.mentorship}</td>
-        <td>${r.cfg.delivery}</td>
-        <td>${r.cfg.response}</td>
-        <td class="numeric-cell">${formatNumber(r.cfg.numberOfGroups, 0)}</td>
-        <td class="numeric-cell">${formatNumber(r.cfg.participantsPerGroup, 0)}</td>
-        <td class="numeric-cell">${formatCurrency(r.cfg.costPerParticipantPerMonth)}</td>
-        <td>${getModel().label}</td>
+        <td>${cfg.serviceType}</td>
+        <td>${cfg.mode}</td>
+        <td>${cfg.frequency}</td>
+        <td>${cfg.duration}</td>
+        <td>${cfg.distance}</td>
+        <td class="numeric-cell">${formatNumber(cfg.numberOfGroups, 0)}</td>
+        <td class="numeric-cell">${formatNumber(cfg.participantsPerGroup, 0)}</td>
+        <td class="numeric-cell">${formatCurrency(cfg.costPerParticipantPerMonth)}</td>
+        <td>${state.modelLabel}</td>
         <td class="numeric-cell">${formatPercent(r.util.endorseProb, 1)}</td>
         <td class="numeric-cell">${
           r.wtpPerParticipantPerMonth === null
             ? "-"
-            : formatCurrency(r.wtpPerParticipantPerMonth)
+            : formatCurrency(r.wtpPerParticipantPerMonth, 1)
         }</td>
         <td class="numeric-cell">${
           r.totalWtpAllGroups === null
@@ -1053,16 +1108,16 @@
             : formatCurrency(r.netBenefitAllGroups)
         }</td>
         <td class="numeric-cell">${
-          r.cfg.numberOfGroups * r.cfg.participantsPerGroup
+          cfg.numberOfGroups * cfg.participantsPerGroup
         }</td>
-        <td>${r.cfg.scenarioNotes || ""}</td>
+        <td>${cfg.scenarioNotes || ""}</td>
       `;
       tbody.appendChild(tr);
     });
   }
 
   /* ===========================
-     Export utilities (Excel / PDF)
+     Export utilities
      =========================== */
 
   function exportTableToExcel(tableId, filename) {
@@ -1174,34 +1229,20 @@
   function setupSliderDisplay() {
     const slider = document.getElementById("cost-slider");
     const display = document.getElementById("cost-display");
+    const regionEl = document.getElementById("region-select");
     if (!slider || !display) return;
+
     const update = () => {
       const val = parseFloat(slider.value) || 0;
-      display.textContent = formatCurrency(val);
+      const region = regionEl ? regionEl.value || "NSW" : "NSW";
+      const multiplier = costOfLivingMultipliers[region] || 1.0;
+      const adjusted = val * multiplier;
+      display.textContent =
+        `${formatCurrency(val)} (base) – ${formatCurrency(adjusted)} after ${region} adjustment`;
     };
     slider.addEventListener("input", update);
+    if (regionEl) regionEl.addEventListener("change", update);
     update();
-  }
-
-  function setupModelToggle() {
-    const buttons = document.querySelectorAll(".pill-toggle[data-model]");
-    buttons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        buttons.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.modelKey = btn.dataset.model === "lc2"
-          ? "supportive"
-          : btn.dataset.model === "lc1"
-          ? "conservative"
-          : "average";
-        if (state.lastResults) {
-          const cfg = state.lastResults.cfg;
-          const newResults = computeCostsAndBenefits(cfg);
-          state.lastResults = newResults;
-          refreshAll(newResults, { skipToast: true });
-        }
-      });
-    });
   }
 
   function setupCurrencyToggle() {
@@ -1263,22 +1304,28 @@
       body.innerHTML = `
         <h3>Headline summary</h3>
         <p>
-          The selected configuration offers a ${prettyTier(
-            cfg.tier
-          )} programme delivered ${prettyDelivery(
-        cfg.delivery
-      )} with ${prettyMentorship(
-        cfg.mentorship
-      )} support. It is expected to reach ${formatNumber(
-        cfg.participantsPerGroup * cfg.numberOfGroups,
+          The selected configuration offers a ${prettyServiceType(
+            cfg.serviceType
+          ).toLowerCase()} programme, delivered as ${prettyMode(
+        cfg.mode
+      ).toLowerCase()} with ${prettyFrequency(
+        cfg.frequency
+      ).toLowerCase()} ${prettyDuration(
+        cfg.duration
+      ).toLowerCase()} in ${prettyDistance(
+        cfg.distance
+      ).toLowerCase()}. It is expected to run for ${formatNumber(
+        cfg.programmeMonths,
         0
-      )} older adults in total.
+      )} months.
         </p>
         <p>
-          The estimated endorsement rate is ${formatPercent(
+          The main DCE model suggests that around ${formatPercent(
             r.util.endorseProb,
             1
-          )}. Total economic costs are approximately ${formatCurrency(
+          )} of older adults would endorse and take up this offer at ${formatCurrency(
+        cfg.costPerParticipantPerMonth
+      )} per person per month in ${cfg.region}. Total economic costs are approximately ${formatCurrency(
         r.totalCostAllGroups
       )}, compared with preference-based benefits of ${formatCurrency(
         r.totalWtpAllGroups || 0
@@ -1293,7 +1340,7 @@
         <h3>Key indicators</h3>
         <ul>
           <li>Endorsement: ${formatPercent(r.util.endorseProb, 1)}</li>
-          <li>Cost per participant per month: ${formatCurrency(
+          <li>Cost per participant per month (adjusted): ${formatCurrency(
             cfg.costPerParticipantPerMonth
           )}</li>
           <li>Total economic cost (all groups): ${formatCurrency(
@@ -1325,7 +1372,7 @@
   }
 
   /* ===========================
-     Guided tour (minimal)
+     Guided tour (optional)
      =========================== */
 
   function setupGuidedTour() {
@@ -1410,7 +1457,7 @@
   }
 
   /* ===========================
-     Init
+     Buttons and init
      =========================== */
 
   function setupButtons() {
@@ -1474,14 +1521,13 @@
     setupTabs();
     setupTooltips();
     setupSliderDisplay();
-    setupModelToggle();
     setupCurrencyToggle();
     setupOppToggle();
     setupResultsModal();
     setupGuidedTour();
     setupButtons();
 
-    // Apply default configuration once
+    // Apply default configuration once on load
     const cfg = readConfigurationFromInputs();
     const results = computeCostsAndBenefits(cfg);
     refreshAll(results, { skipToast: true });
