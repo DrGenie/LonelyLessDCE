@@ -1,4 +1,5 @@
-<!-- index.html -->
+
+<!-- index.html (updated with Copilot soft-integration) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,7 +33,7 @@
           <h1>LonelyLessAustralia Decision Aid Tool</h1>
           <p>
             A policy decision aid to evaluate loneliness support programs for older adults in Australia,
-            combining discrete choice evidence, costs and health economic outcomes.
+            combining discrete choice evidence, realistic costs and health economic outcomes.
           </p>
         </div>
       </div>
@@ -213,7 +214,7 @@ The WTP outcomes tab shows the estimated willingness to pay for the configuratio
 
 The Programme uptake tab shows a simple chart of the predicted share of older adults who would join the program versus those who would not, along with a text recommendation about how to improve uptake if needed.
 
-The Costs and benefits tab brings together economic information. It reports total economic cost, cost per participant, monetised QALY gains, cost savings and productivity gains, as well as loneliness free days and benefit-cost ratios based on different benefit measures.
+The Costs and benefits tab brings together economic information. It reports total economic cost, cost per participant, monetised QALY gains, cost savings and productivity gains, as well as loneliness free days and benefit cost ratios based on different benefit measures.
 
 The Saved scenarios tab lets you store and compare several configurations, and export a summary to PDF for use in slide decks, briefs and business cases.
 
@@ -664,7 +665,7 @@ Thank you for using the LonelyLessAustralia Decision Aid.
           </div>
 
           <div id="detailedCostBreakdown" class="cost-cards" style="display:none;">
-            <!-- Existing cost components from Australian modelling work -->
+            <!-- Cost cards (unchanged) -->
             <div class="cost-card">
               <h4><i class="fa-solid fa-newspaper"></i> Advertisements in local press</h4>
               <p><strong>Quantity:</strong> 2 placements</p>
@@ -800,7 +801,7 @@ Thank you for using the LonelyLessAustralia Decision Aid.
                   <th>Virtual</th>
                   <th>Hybrid</th>
                   <th>2 hour</th>
-                  <th>4 hour</h>
+                  <th>4 hour</th>
                   <th>Community</th>
                   <th>Counselling</th>
                   <th>VR</th>
@@ -821,6 +822,27 @@ Thank you for using the LonelyLessAustralia Decision Aid.
               <tbody></tbody>
             </table>
           </div>
+        </div>
+
+        <!-- New Copilot soft integration card -->
+        <div class="card secondary-card">
+          <h3>Interpret scenarios with Microsoft Copilot</h3>
+          <p>
+            You can use Microsoft Copilot to generate a narrative interpretation of any scenario. The
+            button below prepares a structured prompt that includes a JSON export of the latest results
+            and opens Copilot in a new browser tab. If clipboard access is allowed, the full prompt is
+            copied automatically so you only need to paste it into Copilot.
+          </p>
+          <div class="buttons-row">
+            <button type="button" onclick="prepareCopilotPrompt()">
+              Open in Copilot and copy prompt
+            </button>
+          </div>
+          <p class="small-note">
+            If automatic copy is blocked by your browser or organisation settings, use the box below to
+            copy the prompt manually and paste it into Copilot at <a href="https://copilot.microsoft.com/" target="_blank">copilot.microsoft.com</a>.
+          </p>
+          <textarea id="copilotPromptBox" class="script-box" rows="14" readonly></textarea>
         </div>
       </section>
 
