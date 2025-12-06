@@ -2,335 +2,378 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>STEPS Technical Appendix – FETP India</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>LonelyLessAustralia Technical Appendix</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: "Lato", "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: #f4f6fa;
+      color: #1f2a36;
       margin: 0;
-      padding: 18px 14px 40px;
-      background: #f3f4f6;
-      color: #111827;
+      padding: 0;
     }
-    .page {
+    .shell {
       max-width: 900px;
-      margin: 0 auto;
-      background: #ffffff;
-      padding: 18px 20px 24px;
-      border-radius: 18px;
-      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.2);
+      margin: 20px auto;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(15, 35, 52, 0.15);
+      padding: 20px 22px 18px;
     }
-    h1, h2, h3 {
-      margin-top: 0;
-    }
-    h1 {
-      font-size: 22px;
+    h1, h2, h3, h4 {
+      color: #0a2f57;
+      margin-top: 12px;
       margin-bottom: 6px;
     }
-    h2 {
-      font-size: 18px;
-      margin-top: 18px;
-      border-bottom: 1px solid #e5e7eb;
-      padding-bottom: 4px;
-    }
-    h3 {
-      font-size: 15px;
-      margin-top: 14px;
+    h1 {
+      font-size: 1.6rem;
+      border-bottom: 2px solid #0a2f57;
+      padding-bottom: 6px;
     }
     p {
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12px;
-      background: #f3f4f6;
-      padding: 1px 4px;
-      border-radius: 4px;
-    }
-    .math-block {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12px;
-      background: #f9fafb;
-      padding: 6px 8px;
-      border-radius: 6px;
-      border: 1px solid #e5e7eb;
-      margin: 6px 0 8px;
-      white-space: pre-wrap;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 8px;
+      color: #3f4a5c;
     }
     ul, ol {
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: 0.95rem;
+      color: #3f4a5c;
+      margin-bottom: 8px;
+      padding-left: 18px;
     }
-    .note {
-      background: #eff6ff;
-      border-left: 3px solid #2563eb;
-      padding: 6px 8px;
-      border-radius: 6px;
-      font-size: 12px;
-      margin: 8px 0;
+    .small-note {
+      font-size: 0.86rem;
+      color: #6c7a8c;
+    }
+    .section {
+      margin-top: 12px;
+    }
+    .ref-list li {
+      margin-bottom: 4px;
     }
   </style>
 </head>
 <body>
-<div class="page">
-  <h1>STEPS Technical Appendix – FETP India</h1>
-  <p>
-    This appendix describes how STEPS combines discrete choice experiment (DCE) results, cost templates
-    and epidemiological multipliers to produce endorsement, willingness to pay, cost, benefit and national
-    simulation outputs for Field Epidemiology Training Program (FETP) scale up options in India.
-  </p>
+  <div class="shell">
+    <h1>LonelyLessAustralia Decision Aid Tool<br />Technical Appendix</h1>
 
-  <h2>1. Preference model and utility specification</h2>
-  <p>
-    The DCE asked respondents to choose between alternative FETP designs and an opt out option.
-    Choices are modelled using a mixed logit specification with a lognormal cost coefficient.
-    For respondent <code>n</code>, choice task <code>t</code> and alternative <code>j</code>,
-    indirect utility is written as:
-  </p>
-  <div class="math-block">
-U<sub>ntj</sub> = V<sub>ntj</sub> + ε<sub>ntj</sub>,
-  </div>
-  <p>
-    where <code>V_ntj</code> is the systematic component of utility and <code>ε_ntj</code> is an i.i.d.
-    extreme value type I error term.
-  </p>
+    <div class="section">
+      <h2>1. Overview</h2>
+      <p>
+        This appendix documents the methods, assumptions and evidence sources used in the LonelyLessAustralia
+        decision aid tool. It explains how discrete choice experiment results are translated into predicted
+        uptake and willingness to pay, how cost components and health outcomes are parameterised for the
+        Australian context and how benefit cost metrics and return on investment are derived.
+      </p>
+    </div>
 
-  <p>
-    In STEPS the systematic utility of an FETP programme option is specified as:
-  </p>
-  <div class="math-block">
-V = α<sub>A</sub> · ASC<sub>A</sub>
-  + β<sub>PT,int</sub> · PT<sub>int</sub>
-  + β<sub>PT,adv</sub> · PT<sub>adv</sub>
-  + β<sub>INC,univ</sub> · INC<sub>univ</sub>
-  + β<sub>INC,govpath</sub> · INC<sub>govpath</sub>
-  + β<sub>MEN,med</sub> · MEN<sub>med</sub>
-  + β<sub>MEN,high</sub> · MEN<sub>high</sub>
-  + β<sub>MOD,in</sub> · MOD<sub>in</sub>
-  + β<sub>MOD,online</sub> · MOD<sub>online</sub>
-  + β<sub>RESP,15</sub> · RESP<sub>15</sub>
-  + β<sub>RESP,7</sub> · RESP<sub>7</sub>
-  + β<sub>cost,n</sub> · cost<sub>000</sub>.
-  </div>
-  <p>
-    Attributes are coded as dummy variables relative to clearly defined reference categories:
-    frontline training, government and partner certificate, low mentorship, blended delivery,
-    and response within 30 days. The term <code>ASC_A</code> is equal to one for any programme configuration
-    and zero for the opt out alternative. The opt out alternative has its own constant <code>ASC_OptOut</code>.
-  </p>
+    <div class="section">
+      <h2>2. Discrete choice experiment and uptake model</h2>
+      <h3>2.1 Attributes and design</h3>
+      <p>
+        The discrete choice experiment (DCE) included attributes that describe key features of loneliness
+        support programs for older adults: type of support programme, delivery method, frequency and
+        duration of sessions, accessibility and participant cost per session. For each attribute, one level
+        was treated as the reference and additional levels represented improvements or trade offs.
+      </p>
+      <p>
+        Respondents aged 65 years and older were asked to choose between hypothetical programmes and an
+        opt out option in a series of choice tasks. The design followed standard practice in health
+        economics, with blocked experimental designs and a dual response structure where appropriate.
+      </p>
 
-  <h3>Lognormal cost coefficient</h3>
-  <p>
-    To ensure a strictly negative marginal utility of cost, the cost coefficient is modelled as lognormal.
-    Let <code>mcost_n</code> denote the latent normal term for respondent <code>n</code>:
-  </p>
-  <div class="math-block">
-mcost<sub>n</sub> ~ Normal(μ<sub>mcost</sub>, σ<sub>mcost</sub><sup>2</sup>)
-β<sub>cost,n</sub> = -exp(mcost<sub>n</sub>).
-  </div>
-  <p>
-    The mean of the lognormal term is
-  </p>
-  <div class="math-block">
-E[exp(mcost<sub>n</sub>)] = exp(μ<sub>mcost</sub> + 0.5 σ<sub>mcost</sub><sup>2</sup>),
-  </div>
-  <p>
-    so the representative cost coefficient used in STEPS is
-  </p>
-  <div class="math-block">
-b<sub>cost,MXL</sub> = -exp(μ<sub>mcost</sub> + 0.5 σ<sub>mcost</sub><sup>2</sup>).
-  </div>
-  <p>
-    All non cost coefficients in the utility function are set equal to their mixed logit means.
-    In practice STEPS uses back transformed mean values that match the lognormal specification
-    but are simple to implement in the browser.
-  </p>
+      <h3>2.2 Econometric model</h3>
+      <p>
+        The main analysis estimated an error component logit model with a random alternative specific
+        constant for the programme options to capture panel correlation and unobserved preference
+        heterogeneity, with all non cost attributes treated as fixed effects. For use in the tool, a
+        parsimonious mixed logit specification with normally distributed random part of the alternative
+        specific constant and a continuous cost coefficient was implemented.
+      </p>
+      <p>
+        The utility for the programme alternative is specified as a linear index in the coded attributes
+        and continuous cost, with an alternative specific constant for opting into any programme versus
+        the opt out choice. Coefficient values used in the interface correspond to the main model
+        estimates from the DCE analysis.
+      </p>
 
-  <h3>Latent class model</h3>
-  <p>
-    In addition to the mixed logit model, STEPS uses the second class from a two class latent class logit model
-    to represent a supportive stakeholder group. This class has its own alternative specific constants, attribute
-    coefficients and cost coefficient. Users can switch between the average mixed logit model and this supportive
-    latent class group to explore how endorsement and benefits change when focusing on relatively supportive stakeholders.
-  </p>
+      <h3>2.3 Predicted uptake</h3>
+      <p>
+        For a given configuration of attributes, the tool constructs the utility index and applies the
+        standard logit formula to estimate the probability that a representative older adult chooses the
+        programme instead of the opt out option. This probability is interpreted as the expected uptake
+        proportion in a target population of eligible older adults.
+      </p>
+      <p>
+        The base cohort size in the tool is set to 250 eligible older adults. The number of participants
+        is obtained by multiplying this cohort by the predicted uptake probability. Users can rescale
+        results to alternative cohort sizes by linear extrapolation, as the model is formulated per
+        eligible individual.
+      </p>
+    </div>
 
-  <h2>2. Endorsement probabilities</h2>
-  <p>
-    For any candidate programme configuration <code>s</code>, STEPS constructs the corresponding vector of attribute dummies
-    and cost, and evaluates the programme utility:
-  </p>
-  <div class="math-block">
-V<sub>prog,s</sub> = V<sub>noncost,s</sub> + b<sub>cost</sub> · cost<sub>000,s</sub>.
-  </div>
-  <p>
-    The opt out alternative has utility
-  </p>
-  <div class="math-block">
-V<sub>optout</sub> = α<sub>OptOut</sub> · ASC<sub>OptOut</sub> + b<sub>cost</sub> · cost<sub>000,opt</sub>,
-  </div>
-  <p>
-    with the attribute vector taken from the experimental design. Using a simple two alternative logit,
-    the probability of endorsing programme <code>s</code> rather than opting out is
-  </p>
-  <div class="math-block">
-P<sub>uptake,s</sub> = exp(V<sub>prog,s</sub>) /
-                     [exp(V<sub>prog,s</sub>) + exp(V<sub>optout</sub>)].
-  </div>
-  <p>
-    Endorsement in STEPS is reported as <code>100 × P_uptake,s</code> percent. The remaining percentage
-    is labelled “opt out” in the interface.
-  </p>
+    <div class="section">
+      <h2>3. Willingness to pay and preference based benefits</h2>
+      <h3>3.1 Attribute level willingness to pay</h3>
+      <p>
+        Willingness to pay (WTP) for each attribute level is obtained by dividing the attribute coefficient
+        by the absolute value of the cost coefficient from the DCE model. This yields a monetary value in
+        Australian dollars representing the extra fee per session that older adults would be willing to pay
+        for that feature relative to the reference level, holding other attributes constant.
+      </p>
+      <p>
+        The tool uses point estimates of WTP per participant per session for each attribute level. Standard
+        errors and p values reported in the WTP tab are derived from the variance covariance matrix of the
+        estimated coefficients in the DCE regression models.
+      </p>
 
-  <h3>Worked example – endorsement</h3>
-  <p>
-    Consider a configuration with advanced tier, government career pathway, high mentorship,
-    blended delivery, response within 7 days and a cost of 100,000 INR per trainee per month.
-    The non cost utility is the sum of the relevant mixed logit means:
-  </p>
-  <div class="math-block">
-V<sub>noncost,s</sub> = α<sub>A</sub> + β<sub>PT,adv</sub> + β<sub>INC,govpath</sub>
-                     + β<sub>MEN,high</sub> + β<sub>RESP,7</sub>.
-  </div>
-  <p>
-    Using the numerical values in the manuscript this yields approximately 1.67.
-    The cost term is <code>b_cost,MXL × 100</code>. The programme utility is then
-    <code>V_prog,s = 1.67 + b_cost,MXL × 100</code>. Combined with the pre computed
-    <code>V_optout</code>, STEPS converts this into an endorsement percentage through
-    the logit formula above.
-  </p>
+      <h3>3.2 WTP for a configuration</h3>
+      <p>
+        For any given configuration, the tool computes the per participant WTP per session by summing the
+        relevant attribute level WTP estimates. For example, if the configuration combines a community
+        engagement programme with weekly sessions, a local venue and a virtual delivery method, the
+        corresponding WTP values for those four attributes are added together.
+      </p>
+      <p>
+        The per participant WTP for the entire programme is then calculated by multiplying the per session
+        WTP by the number of sessions. In the current implementation, twelve sessions are assumed, which
+        aligns with the group based intervention used in Australian modelling of loneliness interventions
+        for older women. The total WTP based benefit for the configuration is obtained by multiplying the
+        per participant programme WTP by the number of participants predicted to enrol.
+      </p>
+      <p>
+        The WTP based benefit cost ratio is calculated as the ratio of total WTP benefits to total economic
+        costs. This ratio provides a preference based indicator of value, grounded in older adults stated
+        willingness to pay for programme features.
+      </p>
+    </div>
 
-  <h2>3. Willingness to pay and benefits</h2>
-  <p>
-    Willingness to pay (WTP) values are derived from the mixed logit model as the marginal rate of substitution
-    between each attribute and cost. For an attribute with coefficient <code>β_k</code> and a cost coefficient
-    <code>β_cost</code>, the WTP for that attribute level is:
-  </p>
-  <div class="math-block">
-WTP<sub>k</sub> = -β<sub>k</sub> / β<sub>cost</sub>.
-  </div>
-  <p>
-    WTP is expressed in thousand rupees per trainee per month. STEPS stores a table of WTP values for each
-    attribute level and sums them to obtain the total WTP for a configuration:
-  </p>
-  <div class="math-block">
-WTP<sub>total</sub> =
-  WTP<sub>tier</sub> +
-  WTP<sub>career</sub> +
-  WTP<sub>mentorship</sub> +
-  WTP<sub>delivery</sub> +
-  WTP<sub>response</sub>.
-  </div>
-  <p>
-    In the Results tab the model uses this combined WTP per trainee per month to derive
-    an indicative benefit per cohort:
-  </p>
-  <div class="math-block">
-Benefit per cohort =
-  WTP<sub>total</sub> × duration (months)
-  × graduates per cohort
-  × endorsement.
-  </div>
-  <p>
-    Total indicative benefit across all cohorts is the benefit per cohort multiplied by
-    the number of cohorts. This value, together with total cost, defines the benefit cost ratio
-    and net benefit reported in the tool.
-  </p>
+    <div class="section">
+      <h2>4. Costing of interventions</h2>
+      <h3>4.1 Base cost structure</h3>
+      <p>
+        Cost components and unit values in the tool are based on Australian costing work for loneliness
+        interventions. The structure follows the educational friendship enrichment programme for older
+        women described by the National Mental Health Commission, which reports intervention costs, cost
+        savings and return on investment for a national implementation of a group based programme over
+        three and five year horizons. :contentReference[oaicite:0]{index=0}
+      </p>
+      <p>
+        The cost items include advertising in local press, printing and postage of leaflets, administrative
+        staff time, trainer time, on costs, facilitator salaries, materials, venue hire, participant time
+        cost and travel. Unit costs and quantities reflect those reported in the commission's technical
+        brief and related cost effectiveness work on reducing loneliness to prevent depression among older
+        adults. :contentReference[oaicite:1]{index=1}
+      </p>
 
-  <h2>4. Cost templates and economic cost</h2>
-  <p>
-    Cost templates are based on submissions from WHO, NIE and NCDC. For each tier the template
-    contains line items for staff, travel, training materials, management and other components.
-  </p>
-  <p>
-    STEPS treats these templates as alternative settings rather than combining them. When a template is selected
-    the tool calculates the share of total programme cost (excluding opportunity cost) represented by each component.
-    For a given configuration, programme cost per cohort is:
-  </p>
-  <div class="math-block">
-Programme cost per cohort =
-  cost per trainee per month × duration × trainees per cohort.
-  </div>
-  <p>
-    This is allocated across components according to the shares in the template. If the opportunity cost toggle
-    is turned on, the tool adds:
-  </p>
-  <div class="math-block">
-Opportunity cost per cohort =
-  opportunity cost per trainee per month × duration × trainees per cohort.
-  </div>
-  <p>
-    Total economic cost per cohort is the sum of programme cost and opportunity cost.
-    Multiplying by the number of cohorts yields total cost for the configuration.
-  </p>
+      <h3>4.2 Total economic cost</h3>
+      <p>
+        In the decision aid, fixed costs include advertising and a set of overheads that do not vary with
+        achieved uptake. Variable costs scale with the proportion of the cohort that takes up the
+        programme. For example, printing, postage and many session level costs are multiplied by the
+        predicted uptake probability to reflect the smaller or larger number of participants reached.
+      </p>
+      <p>
+        When users choose to include opportunity cost of participants time, the tool adds a monetised value
+        of time spent in sessions and travel. This is calculated by multiplying session and travel hours
+        per participant by an hourly value of time based on a fraction of average hourly wages for older
+        adults, consistent with the treatment of time and travel costs in scenario analyses reported by
+        the National Mental Health Commission. :contentReference[oaicite:2]{index=2}
+      </p>
 
-  <h2>5. Epidemiological multipliers</h2>
-  <p>
-    The Advanced settings tab includes multipliers that summarise the expected contribution of graduates
-    to outbreak responses and broader health system benefits:
-  </p>
-  <ul>
-    <li>Outbreak responses per graduate per year, by tier.</li>
-    <li>Monetary value assigned to an avoided or managed outbreak.</li>
-    <li>Monetary value per FETP graduate (system strengthening effects).</li>
-  </ul>
-  <p>
-    For a configuration with <code>G</code> graduates and endorsement <code>P_uptake</code>, the implied
-    number of outbreak responses per year is:
-  </p>
-  <div class="math-block">
-Outbreak responses per year =
-  G × response multiplier (tier specific) × P<sub>uptake</sub>.
+      <h3>4.3 Cost of living adjustments</h3>
+      <p>
+        The optional cost of living adjustment applies a state specific multiplier to programme costs and
+        participant fees. The multipliers are illustrative and based on relative differences in cost of
+        living and service costs across Australian jurisdictions as reported in public data sources and
+        wage statistics. Users can revise these multipliers if more precise local information is available.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>5. Health outcomes and QALY gains</h2>
+      <p>
+        The link between loneliness interventions and health outcomes in the tool is based on modelled
+        cost effectiveness work which examined the impact of reducing loneliness on depression in older
+        adults in Australia. In that analysis, reducing loneliness through a preventive programme led to
+        gains in quality adjusted life years (QALYs) by lowering the incidence of depression and its
+        sequelae. :contentReference[oaicite:3]{index=3}
+      </p>
+      <p>
+        The decision aid allows users to choose from low, moderate and high QALY gain scenarios per
+        participant. These values are intended to span plausible effect sizes rather than to represent
+        precise estimates for any specific intervention. The default monetary value per QALY is set at
+        fifty thousand Australian dollars, which is within the range used in Australian cost effectiveness
+        analyses and international guidelines.
+      </p>
+      <p>
+        Total QALY benefits for a configuration are calculated as the QALY gain per participant multiplied
+        by the predicted number of participants and by the value per QALY. The QALY based benefit cost
+        ratio is then obtained by dividing total QALY benefits by total economic costs.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>6. Cost savings, productivity gains and loneliness free days</h2>
+      <h3>6.1 Cost savings and productivity gains</h3>
+      <p>
+        Evidence suggests that loneliness is associated with greater use of primary care, hospital services
+        and mental health care, as well as increased sick leave and reduced productivity. An Australian
+        analysis estimated that the total cost of loneliness across the adult population can reach several
+        billion dollars per year, with older adults accounting for a substantial share of this cost. :contentReference[oaicite:4]{index=4}
+      </p>
+      <p>
+        The tool parameterises cost savings and productivity gains using per participant values drawn from
+        the National Mental Health Commission's educational friendship programme modelling. That work
+        reported total intervention costs of about twenty five million dollars, healthcare savings of over
+        twenty five million dollars and productivity gains of more than forty six million dollars over five
+        years for a national cohort of older women, producing a positive return on investment. :contentReference[oaicite:5]{index=5}
+      </p>
+      <p>
+        By dividing the reported cost savings and productivity gains by the number of programme
+        participants, the tool derives per participant savings over five years and scales these to the
+        predicted number of participants in each configuration. The resulting totals are used to compute
+        a cost saving based benefit cost ratio.
+      </p>
+
+      <h3>6.2 Loneliness free days</h3>
+      <p>
+        The National Mental Health Commission modelling also reported loneliness free days as a primary
+        outcome, with several million loneliness free days gained over three years and more than eighteen
+        million over five years for the national cohort of older women. :contentReference[oaicite:6]{index=6}
+      </p>
+      <p>
+        The decision aid converts these findings into a per participant estimate of loneliness free days
+        over five years and multiplies by the predicted number of participants for the configured
+        programme. This produces a simple, intuitive metric that reflects improvements in experienced
+        loneliness over time, independent of monetary valuation.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>7. Benefit cost ratios and return on investment</h2>
+      <p>
+        For each scenario, the tool reports several benefit cost ratios and associated net benefits:
+      </p>
+      <ul>
+        <li>
+          A QALY based benefit cost ratio, defined as monetised QALY benefits divided by total economic
+          costs, together with the net benefit equal to QALY benefits minus costs.
+        </li>
+        <li>
+          A cost saving based benefit cost ratio, defined as total health system and productivity savings
+          over five years divided by total economic costs, with the corresponding net benefit equal to
+          savings minus costs.
+        </li>
+        <li>
+          A willingness to pay based benefit cost ratio, defined as total WTP benefits divided by total
+          economic costs, with net benefit equal to WTP benefits minus costs.
+        </li>
+      </ul>
+      <p>
+        The ratio of total cost savings and productivity gains to intervention costs in the commission's
+        modelling represents a conventional return on investment metric. In that analysis, the return on
+        investment over five years was greater than two for the base case scenario, meaning that each dollar
+        spent generated more than two dollars in savings. The decision aid adopts the same interpretation
+        when reporting cost saving based benefit cost ratios. :contentReference[oaicite:7]{index=7}
+      </p>
+      <p>
+        Users should bear in mind that the underlying estimates are based on specific interventions,
+        populations and time horizons. When applying results to new settings, it is important to consider
+        differences in programme design, baseline loneliness, comorbidities and health system structures.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>8. Suggested additional benefit measures</h2>
+      <p>
+        Beyond the metrics already implemented in the tool, decision makers may wish to incorporate
+        additional benefit measures depending on data availability and policy priorities. Examples include:
+      </p>
+      <ul>
+        <li>
+          Carer outcomes, such as reduced caregiver burden and improved quality of life for family members,
+          which may be relevant when programmes support socially isolated older adults with care needs.
+        </li>
+        <li>
+          Long term impacts on dementia risk, cardiovascular disease and mortality, given evidence that
+          loneliness and social isolation are associated with higher risks of these outcomes. :contentReference[oaicite:8]{index=8}
+        </li>
+        <li>
+          Wider social benefits, such as increased volunteering, community participation and strengthened
+          social capital, which may contribute to more resilient communities and indirect economic gains.
+        </li>
+      </ul>
+      <p>
+        Incorporating these outcomes would require additional modelling and evidence synthesis and is beyond
+        the scope of the current version of the tool.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>9. Limitations</h2>
+      <p>
+        The decision aid relies on several simplifying assumptions. The DCE model represents average
+        preferences across older adults and may not capture all important sources of heterogeneity. Cost
+        parameters and savings estimates come from specific programmes and time periods and may not fully
+        reflect current wage rates, service costs or policy settings. QALY gains are represented by
+        scenario values rather than intervention specific estimates within the tool, although the default
+        values are grounded in the literature.
+      </p>
+      <p>
+        As a result, the tool is best used to support comparative scenario analysis and structured
+        discussion rather than as a stand alone decision rule. Formal business cases and funding decisions
+        should still be based on context specific analyses using up to date local data.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>10. References</h2>
+      <ol class="ref-list">
+        <li>
+          Engel L, Lee YY, Le LK, Lal A, Mihalopoulos C. Reducing loneliness to prevent depression in older
+          adults in Australia: a modelled cost effectiveness analysis. Mental Health and Prevention. 2021;24:200212. :contentReference[oaicite:9]{index=9}
+        </li>
+        <li>
+          National Mental Health Commission. Educational interventions to reduce older persons loneliness.
+          Sydney: National Mental Health Commission; 2021. :contentReference[oaicite:10]{index=10}
+        </li>
+        <li>
+          Kung CSJ, Kunz JS, Shields MA. Economic aspects of loneliness in Australia. Australian Economic
+          Review. 2021;54(1):147-163. :contentReference[oaicite:11]{index=11}
+        </li>
+        <li>
+          Engel L, Mihalopoulos C. The loneliness epidemic: a holistic view of its health and economic
+          implications in older age. Medical Journal of Australia. 2024;221(6):290-292. :contentReference[oaicite:12]{index=12}
+        </li>
+        <li>
+          National Academies of Sciences, Engineering, and Medicine. Social isolation and loneliness in
+          older adults: opportunities for the health care system. Washington, DC: National Academies Press; 2020. :contentReference[oaicite:13]{index=13}
+        </li>
+        <li>
+          Donovan NJ, Blazer DG. Social isolation and loneliness in older adults: review and commentary
+          of a National Academies report. American Journal of Geriatric Psychiatry. 2020;28(12):1233-1244. :contentReference[oaicite:14]{index=14}
+        </li>
+        <li>
+          Ending Loneliness Together. A national strategy to address loneliness and social isolation:
+          pre budget submission 2021-2022. Sydney: Ending Loneliness Together; 2021. :contentReference[oaicite:15]{index=15}
+        </li>
+        <li>
+          Australian Institute of Health and Welfare. Social isolation, loneliness and wellbeing. In:
+          Australia's welfare 2023: data insights. Canberra: AIHW; 2023. :contentReference[oaicite:16]{index=16}
+        </li>
+      </ol>
+      <p class="small-note">
+        Additional background literature on loneliness interventions, health care utilisation and economic
+        evaluation is cited in the National Mental Health Commission technical brief and related journal
+        articles.
+      </p>
+    </div>
   </div>
-  <p>
-    STEPS reports this as an epidemiological summary and uses the monetary values to provide a qualitative
-    sense of the scale of health system benefits. The primary economic metrics in the tool remain the
-    WTP based benefit, benefit cost ratio and net benefit.
-  </p>
-
-  <h2>6. National simulation</h2>
-  <p>
-    National simulation results are simple extensions of the cohort level calculations:
-  </p>
-  <ul>
-    <li>Total graduates are the sum across all cohorts.</li>
-    <li>Total cost and total indicative benefit are summed across cohorts.</li>
-    <li>Net benefit is the difference between total indicative benefit and total cost.</li>
-    <li>Outbreak responses per year are calculated from the total number of graduates and their multipliers.</li>
-  </ul>
-  <p>
-    These outputs are intended to support discussions of national scale up options and trade offs,
-    not to replace detailed epidemiological or budget impact models.
-  </p>
-
-  <h2>7. Worked end to end example</h2>
-  <p>
-    As a concrete illustration, consider the following configuration:
-  </p>
-  <ul>
-    <li>Advanced programme tier (24 months).</li>
-    <li>Government career pathway as the incentive.</li>
-    <li>High mentorship (maximum two fellows per mentor).</li>
-    <li>Blended delivery.</li>
-    <li>Response within 7 days.</li>
-    <li>Cost of 100,000 INR per trainee per month.</li>
-    <li>Twenty trainees per cohort, ten cohorts.</li>
-  </ul>
-  <ol>
-    <li>STEPS constructs the attribute vector for this configuration and evaluates programme utility using the mixed logit means and the representative cost coefficient.</li>
-    <li>It retrieves the pre computed opt out utility from the design and converts the difference into an endorsement probability.</li>
-    <li>Using the WTP table, it calculates WTP per trainee per month for advanced tier, government career pathway, high mentorship, blended delivery and response within 7 days, and sums these to obtain total WTP.</li>
-    <li>Graduates are calculated as trainees per cohort times completion rate, multiplied by the number of cohorts.</li>
-    <li>Indicative benefits are obtained by combining WTP, duration, graduates and endorsement; total cost is based on cost per trainee, duration, trainees, cohorts and the cost template.</li>
-    <li>The benefit cost ratio and net benefit are then reported, alongside endorsement and outbreak response figures, in the main STEPS interface.</li>
-  </ol>
-
-  <div class="note">
-    All calculations in STEPS are deterministic and transparent. The Advanced settings panel and assumption log
-    are designed to make it straightforward to document which parameter values were used in any given workshop
-    or analysis.
-  </div>
-</div>
 </body>
 </html>
