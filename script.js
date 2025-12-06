@@ -1,1537 +1,978 @@
-/* ===================================================
-   LonelyLessAustralia Decision Aid – script.js
-   Updated to use main DCE coefficients and WTP values
-   (no major omissions; attribute names and estimates
-   now match the main mixed logit model)
-   =================================================== */
+// script.js
+/****************************************************************************
+ * LonelyLessAustralia Decision Aid
+ * - World Bank / WHO style UI
+ * - DCE based uptake and willingness to pay
+ * - QALY, ROI, cost saving and loneliness free day outcomes
+ * - Scenario saving, PDF export and briefing text
+ ****************************************************************************/
 
-(() => {
-  /* ===========================
-     Global state
-     =========================== */
+document.addEventListener("DOMContentLoaded", function () {
+  const tabButtons = document.querySelectorAll(".tablink");
+  tabButtons.forEach(button => {
+    button.addEventListener("click", function () {
+      openTab(this.getAttribute("data-tab"), this);
+    });
+  });
+  // Default tab
+  openTab("aboutTab", document.querySelector(".tablink"));
+});
 
-  const state = {
-    currency: "AUD",                // Currency display (AUD by default)
-    includeOppCost: true,           // Include opportunity cost in totals
-    scenarios: [],                  // Saved scenarios
-    charts: {
-      uptake: null,
-      bcr: null,
-      epi: null,
-      natCostBenefit: null,
-      natEpi: null
+/* Tab switching */
+function openTab(tabId, btn) {
+  const tabs = document.querySelectorAll(".tabcontent");
+  tabs.forEach(tab => tab.style.display = "none");
+
+  const tabButtons = document.querySelectorAll(".tablink");
+  tabButtons.forEach(button => {
+    button.classList.remove("active");
+    button.setAttribute("aria-selected", "false");
+  });
+
+  const current = document.getElementById(tabId);
+  if (current) current.style.display = "block";
+
+  if (btn) {
+    btn.classList.add("active");
+    btn.setAttribute("aria-selected", "true");
+  }
+
+  if (tabId === "wtpTab") renderWTPChart();
+  if (tabId === "costsTab") renderCostsBenefits();
+  if (tabId === "probTab") renderProbChart();
+}
+
+/* Slider label */
+function updateCostDisplay(val) {
+  const label = document.getElementById("costLabel");
+  if (label) label.textContent = val;
+}
+
+/***************************************************************************
+ * Global parameters and coefficients
+ ***************************************************************************/
+
+/* DCE coefficients (main effect logit, continuous cost) */
+const mainCoefficients = {
+  ASC_mean: -0.112,
+  ASC_optout: 0.131,
+  type_comm: 0.527,
+  type_psych: 0.156,
+  type_vr: -0.349,
+  mode_virtual: -0.426,
+  mode_hybrid: -0.289,
+  freq_weekly: 0.617,
+  freq_monthly: 0.336,
+  dur_2hrs: 0.185,
+  dur_4hrs: 0.213,
+  dist_local: 0.059,
+  dist_signif: -0.509,
+  cost_cont: -0.036
+};
+
+/* Cost of living multipliers (illustrative scaling factors) */
+const costOfLivingMultipliers = {
+  NSW: 1.10,
+  VIC: 1.05,
+  QLD: 1.00,
+  WA: 1.08,
+  SA: 1.02,
+  TAS: 1.03,
+  ACT: 1.15,
+  NT: 1.07
+};
+
+/* WTP data (AUD per participant per session) */
+const wtpDataMain = [
+  { key: "type_comm", label: "Community engagement", wtp: 14.47, pVal: 0.000, se: 3.31 },
+  { key: "type_psych", label: "Psychological counselling", wtp: 4.28, pVal: 0.245, se: 3.76 },
+  { key: "type_vr", label: "Virtual reality", wtp: -9.58, pVal: 0.009, se: 3.72 },
+  { key: "mode_virtual", label: "Virtual (method)", wtp: -11.69, pVal: 0.019, se: 5.02 },
+  { key: "mode_hybrid", label: "Hybrid (method)", wtp: -7.95, pVal: 0.001, se: 2.51 },
+  { key: "freq_weekly", label: "Weekly", wtp: 16.93, pVal: 0.000, se: 2.73 },
+  { key: "freq_monthly", label: "Monthly", wtp: 9.21, pVal: 0.005, se: 3.26 },
+  { key: "dur_2hrs", label: "2 hour interaction", wtp: 5.08, pVal: 0.059, se: 2.69 },
+  { key: "dur_4hrs", label: "4 hour interaction", wtp: 5.85, pVal: 0.037, se: 2.79 },
+  { key: "dist_local", label: "Local area accessibility", wtp: 1.62, pVal: 0.712, se: 4.41 },
+  { key: "dist_signif", label: "Wider community accessibility", wtp: -13.99, pVal: 0.000, se: 3.98 }
+];
+
+/* QALY parameters */
+const QALY_SCENARIO_VALUES = {
+  low: 0.02,
+  moderate: 0.05,
+  high: 0.10
+};
+const VALUE_PER_QALY = 50000;
+
+/* Intervention reach for micro programme */
+const BASE_PARTICIPANTS = 250;
+const SESSIONS_PER_PROGRAM = 12;
+
+/* ROI and loneliness free day parameters based on national modelling
+   Figures derived from an educational friendship program for older women in Australia.
+   - Intervention cost around A$155 per participant over five years
+   - Healthcare savings around A$159 per participant over five years
+   - Productivity gains around A$288 per participant over five years
+   - Around 115 loneliness free days per participant over five years
+*/
+const ROI_PARAMS = {
+  healthSavingsPerParticipant5Y: 159,
+  productivitySavingsPerParticipant5Y: 288,
+  lonelinessFreeDaysPerParticipant5Y: 115,
+  timeHorizonYears: 5
+};
+
+/* Opportunity cost assumptions (hours and hourly value) */
+const OPP_COST_HOURLY_VALUE = 20; // AUD per hour
+const TRAVEL_HOURS_LOCAL_PER_SESSION = 0.5;
+const TRAVEL_HOURS_WIDER_PER_SESSION = 1.5;
+
+/***************************************************************************
+ * Scenario building
+ ***************************************************************************/
+
+function buildScenarioFromInputs() {
+  const state = document.getElementById("state_select").value;
+  const adjustCosts = document.getElementById("adjustCosts").value;
+  const costSliderEl = document.getElementById("costSlider");
+  if (!costSliderEl) return null;
+  const rawCost = parseFloat(costSliderEl.value || "0");
+
+  const scenarioName = (document.getElementById("scenarioName") || {}).value || "";
+  const scenarioNotes = (document.getElementById("scenarioNotes") || {}).value || "";
+  const includeOppCost = document.getElementById("includeOppCost")?.checked || false;
+
+  const support = document.querySelector('input[name="support"]:checked');
+  const frequency = document.querySelector('input[name="frequency"]:checked');
+  const duration = document.querySelector('input[name="duration"]:checked');
+  const accessibility = document.querySelector('input[name="accessibility"]:checked');
+
+  const method = document.querySelector('input[name="method"]:checked');
+
+  if (!support || !frequency || !duration || !accessibility) {
+    alert("Please select a level for support programme, frequency, duration and accessibility.");
+    return null;
+  }
+
+  const commCheck = support.value === "community";
+  const psychCheck = support.value === "counselling";
+  const vrCheck = support.value === "vr";
+
+  const weeklyCheck = frequency.value === "weekly";
+  const monthlyCheck = frequency.value === "monthly";
+
+  const twoHCheck = duration.value === "2hr";
+  const fourHCheck = duration.value === "4hr";
+
+  const localCheck = accessibility.value === "local";
+  const widerCheck = accessibility.value === "wider";
+
+  let virtualCheck = false;
+  let hybridCheck = false;
+  if (method) {
+    virtualCheck = method.value === "virtual";
+    hybridCheck = method.value === "hybrid";
+  }
+
+  return {
+    scenarioName,
+    scenarioNotes,
+    state,
+    adjustCosts,
+    rawCost,
+    includeOppCost,
+    commCheck,
+    psychCheck,
+    vrCheck,
+    weeklyCheck,
+    monthlyCheck,
+    twoHCheck,
+    fourHCheck,
+    localCheck,
+    widerCheck,
+    virtualCheck,
+    hybridCheck
+  };
+}
+
+/***************************************************************************
+ * Utility calculations
+ ***************************************************************************/
+
+function applyCostOfLiving(rawCost, state, adjustFlag) {
+  let cost = rawCost;
+  if (adjustFlag === "yes" && state && costOfLivingMultipliers[state]) {
+    cost *= costOfLivingMultipliers[state];
+  }
+  return cost;
+}
+
+function computeProbabilityFromScenario(sc) {
+  if (!sc) return 0;
+
+  const adjustedCost = applyCostOfLiving(sc.rawCost, sc.state, sc.adjustCosts);
+  const dist_local = sc.localCheck ? 1 : 0;
+  const dist_signif = sc.widerCheck ? 1 : 0;
+  const freq_weekly = sc.weeklyCheck ? 1 : 0;
+  const freq_monthly = sc.monthlyCheck ? 1 : 0;
+  const mode_virtual = sc.virtualCheck ? 1 : 0;
+  const mode_hybrid = sc.hybridCheck ? 1 : 0;
+  const dur_2hrs = sc.twoHCheck ? 1 : 0;
+  const dur_4hrs = sc.fourHCheck ? 1 : 0;
+  const type_comm = sc.commCheck ? 1 : 0;
+  const type_psych = sc.psychCheck ? 1 : 0;
+  const type_vr = sc.vrCheck ? 1 : 0;
+
+  const U_alt =
+    mainCoefficients.ASC_mean +
+    mainCoefficients.type_comm * type_comm +
+    mainCoefficients.type_psych * type_psych +
+    mainCoefficients.type_vr * type_vr +
+    mainCoefficients.mode_virtual * mode_virtual +
+    mainCoefficients.mode_hybrid * mode_hybrid +
+    mainCoefficients.freq_weekly * freq_weekly +
+    mainCoefficients.freq_monthly * freq_monthly +
+    mainCoefficients.dur_2hrs * dur_2hrs +
+    mainCoefficients.dur_4hrs * dur_4hrs +
+    mainCoefficients.dist_local * dist_local +
+    mainCoefficients.dist_signif * dist_signif +
+    mainCoefficients.cost_cont * adjustedCost;
+
+  const U_optout = mainCoefficients.ASC_optout;
+
+  const expAlt = Math.exp(U_alt);
+  const expOpt = Math.exp(U_optout);
+
+  return expAlt / (expAlt + expOpt);
+}
+
+/* Opportunity cost in monetary terms */
+function computeOpportunityCost(sc, participants) {
+  if (!sc.includeOppCost || participants <= 0) return 0;
+
+  const baseSessionHours = sc.twoHCheck ? 2 : (sc.fourHCheck ? 4 : 0.5);
+  const travelHours = sc.widerCheck
+    ? TRAVEL_HOURS_WIDER_PER_SESSION
+    : (sc.localCheck ? TRAVEL_HOURS_LOCAL_PER_SESSION : 0);
+
+  const hoursPerParticipant = SESSIONS_PER_PROGRAM * (baseSessionHours + travelHours);
+  const oppCostPerParticipant = hoursPerParticipant * OPP_COST_HOURLY_VALUE;
+
+  return oppCostPerParticipant * participants;
+}
+
+/* WTP value for configuration per participant per session */
+function computeWTPPerParticipantSession(sc) {
+  let total = 0;
+  if (sc.commCheck) {
+    total += getWTPByKey("type_comm");
+  } else if (sc.psychCheck) {
+    total += getWTPByKey("type_psych");
+  } else if (sc.vrCheck) {
+    total += getWTPByKey("type_vr");
+  }
+
+  if (sc.weeklyCheck) {
+    total += getWTPByKey("freq_weekly");
+  } else if (sc.monthlyCheck) {
+    total += getWTPByKey("freq_monthly");
+  }
+
+  if (sc.twoHCheck) {
+    total += getWTPByKey("dur_2hrs");
+  } else if (sc.fourHCheck) {
+    total += getWTPByKey("dur_4hrs");
+  }
+
+  if (sc.localCheck) {
+    total += getWTPByKey("dist_local");
+  } else if (sc.widerCheck) {
+    total += getWTPByKey("dist_signif");
+  }
+
+  if (sc.virtualCheck) {
+    total += getWTPByKey("mode_virtual");
+  } else if (sc.hybridCheck) {
+    total += getWTPByKey("mode_hybrid");
+  }
+
+  return total;
+}
+
+function getWTPByKey(key) {
+  const rec = wtpDataMain.find(d => d.key === key);
+  return rec ? rec.wtp : 0;
+}
+
+/***************************************************************************
+ * High level calculations for configuration
+ ***************************************************************************/
+
+function getFullResultsForScenario() {
+  const sc = buildScenarioFromInputs();
+  if (!sc) return null;
+
+  const uptakeProb = computeProbabilityFromScenario(sc);
+  const uptakePercent = uptakeProb * 100;
+  const participants = BASE_PARTICIPANTS * uptakeProb;
+
+  const qalyScenario = document.getElementById("qalySelect")
+    ? document.getElementById("qalySelect").value || "moderate"
+    : "moderate";
+  const qalyPerParticipant = QALY_SCENARIO_VALUES[qalyScenario] || QALY_SCENARIO_VALUES.moderate;
+  const totalQALYs = participants * qalyPerParticipant;
+  const qalyMonetised = totalQALYs * VALUE_PER_QALY;
+
+  const adjustedUnitCost = applyCostOfLiving(sc.rawCost, sc.state, sc.adjustCosts);
+  const FIXED_COST_ADVERT = 2978.80;
+  const OTHER_FIXED_COSTS = 26863.00;
+  const FIXED_TOTAL = FIXED_COST_ADVERT + OTHER_FIXED_COSTS;
+
+  const variableComponents =
+    0.12 * 10000 +
+    0.15 * 10000 +
+    49.99 * 10 +
+    223.86 * 100 +
+    44.77 * 100 +
+    100.00 * 100 +
+    50.00 * 100 +
+    15.00 * 100 +
+    20.00 * 250 +
+    10.00 * 250;
+
+  const VARIABLE_TOTAL = variableComponents;
+
+  const baselineCost = FIXED_TOTAL + VARIABLE_TOTAL * uptakeProb;
+  const participantFeeRevenue = adjustedUnitCost * SESSIONS_PER_PROGRAM * participants;
+  const opportunityCost = computeOpportunityCost(sc, participants);
+
+  const totalEconomicCost = baselineCost + opportunityCost;
+
+  const healthSavings = ROI_PARAMS.healthSavingsPerParticipant5Y * participants;
+  const productivitySavings = ROI_PARAMS.productivitySavingsPerParticipant5Y * participants;
+  const totalSavings = healthSavings + productivitySavings;
+
+  const lonelinessFreeDays = ROI_PARAMS.lonelinessFreeDaysPerParticipant5Y * participants;
+
+  const wtpPerParticipantSession = computeWTPPerParticipantSession(sc);
+  const wtpPerParticipantProgram = wtpPerParticipantSession * SESSIONS_PER_PROGRAM;
+  const totalWTPBenefits = wtpPerParticipantProgram * participants;
+
+  const netBenefitQALY = qalyMonetised - totalEconomicCost;
+  const netBenefitSavings = totalSavings - totalEconomicCost;
+  const netBenefitWTP = totalWTPBenefits - totalEconomicCost;
+
+  const bcrQALY = totalEconomicCost > 0 ? qalyMonetised / totalEconomicCost : null;
+  const bcrSavings = totalEconomicCost > 0 ? totalSavings / totalEconomicCost : null;
+  const bcrWTP = totalEconomicCost > 0 ? totalWTPBenefits / totalEconomicCost : null;
+
+  return {
+    scenario: sc,
+    uptakeProb,
+    uptakePercent,
+    participants,
+    adjustedUnitCost,
+    qalyScenario,
+    qalyPerParticipant,
+    totalQALYs,
+    qalyMonetised,
+    baselineCost,
+    opportunityCost,
+    totalEconomicCost,
+    healthSavings,
+    productivitySavings,
+    totalSavings,
+    lonelinessFreeDays,
+    wtpPerParticipantSession,
+    wtpPerParticipantProgram,
+    totalWTPBenefits,
+    netBenefitQALY,
+    netBenefitSavings,
+    netBenefitWTP,
+    bcrQALY,
+    bcrSavings,
+    bcrWTP
+  };
+}
+
+/***************************************************************************
+ * Apply configuration, summary and briefing
+ ***************************************************************************/
+
+function applyConfiguration() {
+  const res = getFullResultsForScenario();
+  if (!res) return;
+
+  updateConfigurationSummary(res);
+  updateHeadlineRecommendation(res);
+  updateBriefingText(res);
+  renderCostsBenefits(res);
+  showToast("Configuration applied. Results updated.");
+}
+
+function viewResultsSummary() {
+  const res = getFullResultsForScenario();
+  if (!res) return;
+
+  const modalDiv = document.getElementById("modalResults");
+  if (!modalDiv) return;
+
+  const s = res.scenario;
+  const html = `
+    <h3>Results summary for "${escapeHtml(s.scenarioName || "Unnamed scenario")}"</h3>
+    <p><strong>Predicted uptake:</strong> ${res.uptakePercent.toFixed(1)} percent of eligible older adults</p>
+    <p><strong>Participants:</strong> ${res.participants.toFixed(0)}</p>
+    <p><strong>Total economic cost:</strong> A$${formatMoney(res.totalEconomicCost)}</p>
+    <p><strong>Monetised QALY benefits:</strong> A$${formatMoney(res.qalyMonetised)} (scenario: ${res.qalyScenario})</p>
+    <p><strong>Cost savings and productivity gains (5 years):</strong> A$${formatMoney(res.totalSavings)}</p>
+    <p><strong>WTP based benefits:</strong> A$${formatMoney(res.totalWTPBenefits)}</p>
+    <p><strong>Loneliness free days (5 years):</strong> ${res.lonelinessFreeDays.toFixed(0)}</p>
+    <p><strong>Benefit cost ratio (QALY):</strong> ${res.bcrQALY ? res.bcrQALY.toFixed(2) : "n.a."}</p>
+    <p><strong>Benefit cost ratio (cost savings):</strong> ${res.bcrSavings ? res.bcrSavings.toFixed(2) : "n.a."}</p>
+    <p><strong>Benefit cost ratio (WTP):</strong> ${res.bcrWTP ? res.bcrWTP.toFixed(2) : "n.a."}</p>
+  `;
+  modalDiv.innerHTML = html;
+  openModal();
+}
+
+/* Configuration summary card */
+function updateConfigurationSummary(res) {
+  const div = document.getElementById("configSummary");
+  if (!div) return;
+  const s = res.scenario;
+
+  const lines = [];
+  lines.push(`<strong>Programme type:</strong> ${s.commCheck ? "Community engagement" : s.psychCheck ? "Psychological counselling" : s.vrCheck ? "Virtual reality" : "Peer support (reference)"}`);
+  lines.push(`<strong>Method:</strong> ${s.virtualCheck ? "Virtual" : s.hybridCheck ? "Hybrid" : "In person"}`);
+  lines.push(`<strong>Frequency and duration:</strong> ${s.weeklyCheck ? "Weekly" : s.monthlyCheck ? "Monthly" : "Daily reference"}, ${s.twoHCheck ? "2 hour sessions" : s.fourHCheck ? "4 hour sessions" : "30 minute reference"}`);
+  lines.push(`<strong>Accessibility:</strong> ${s.localCheck ? "Local area" : s.widerCheck ? "Wider community" : "At home reference"}`);
+  lines.push(`<strong>Participant cost per session:</strong> A$${applyCostOfLiving(s.rawCost, s.state, s.adjustCosts).toFixed(2)}${s.adjustCosts === "yes" && s.state ? " (adjusted for " + s.state + ")" : ""}`);
+  lines.push(`<strong>Include opportunity cost:</strong> ${s.includeOppCost ? "Yes" : "No"}`);
+  lines.push(`<strong>Predicted uptake:</strong> ${res.uptakePercent.toFixed(1)} percent`);
+  lines.push(`<strong>Total economic cost:</strong> A$${formatMoney(res.totalEconomicCost)}`);
+
+  div.innerHTML = `<ul class="bullet-list"><li>${lines.join("</li><li>")}</li></ul>`;
+}
+
+/* Headline recommendation */
+function updateHeadlineRecommendation(res) {
+  const div = document.getElementById("headlineRecommendation");
+  if (!div) return;
+
+  const up = res.uptakePercent;
+  const bcrQ = res.bcrQALY || 0;
+  const bcrSav = res.bcrSavings || 0;
+  const bcrW = res.bcrWTP || 0;
+
+  let message = "";
+
+  if (up >= 70 && (bcrQ > 1 || bcrSav > 1 || bcrW > 1)) {
+    message =
+      "This configuration appears attractive, combining high projected programme uptake with at least one benefit cost ratio above one. " +
+      "Subject to budget and implementation feasibility, it is a strong candidate for scale up.";
+  } else if (up >= 50 && (bcrQ > 1 || bcrSav > 1 || bcrW > 1)) {
+    message =
+      "This configuration delivers moderate to high uptake and at least one benefit cost ratio above one. " +
+      "There is a reasonable case for investment, particularly if targeting priority groups at risk of loneliness.";
+  } else if (up >= 50 && bcrQ <= 1 && bcrSav <= 1 && bcrW <= 1) {
+    message =
+      "Uptake is acceptable but economic returns are borderline. " +
+      "Reducing programme costs, increasing effectiveness or adjusting programme features may improve the value for money profile.";
+  } else if (up < 50 && (bcrQ > 1 || bcrSav > 1 || bcrW > 1)) {
+    message =
+      "Economic returns look promising, but projected uptake is modest. " +
+      "Consider revising programme design to improve participation, for example by using local venues, weekly frequency or community engagement formats.";
+  } else {
+    message =
+      "Both uptake and benefit cost ratios are modest, suggesting that the configuration is unlikely to offer good value in its current form. " +
+      "It may still be useful for specific subgroups, but further design work is recommended.";
+  }
+
+  div.innerHTML = `<p>${message}</p>`;
+}
+
+/* Briefing text generation */
+function updateBriefingText(res) {
+  const textarea = document.getElementById("briefingText");
+  if (!textarea) return;
+  const s = res.scenario;
+
+  const name = s.scenarioName || "the proposed programme configuration";
+  const up = res.uptakePercent;
+  const part = res.participants;
+  const totalCost = res.totalEconomicCost;
+  const bcrQ = res.bcrQALY;
+  const bcrSav = res.bcrSavings;
+  const bcrW = res.bcrWTP;
+
+  const text =
+    `${name} is expected to attract around ${up.toFixed(1)} percent of eligible older adults, which corresponds to approximately ${part.toFixed(0)} participants under the base cohort of ${BASE_PARTICIPANTS}. ` +
+    `Total economic costs, including fixed programme inputs${s.includeOppCost ? " and the opportunity cost of participants time" : ""}, are estimated at about A$${formatMoney(totalCost)} over the modelled period. ` +
+    `Using QALY based monetised health gains, the implied benefit cost ratio is ${bcrQ ? bcrQ.toFixed(2) : "not defined"}. ` +
+    `When focusing on health care and productivity cost savings, the benefit cost ratio is ${bcrSav ? bcrSav.toFixed(2) : "not defined"}. ` +
+    `Using discrete choice willingness to pay as an alternative benefit measure, the benefit cost ratio is ${bcrW ? bcrW.toFixed(2) : "not defined"}. ` +
+    `Under these assumptions, the configuration would generate on the order of ${res.lonelinessFreeDays.toFixed(0)} loneliness free days over five years for participants. ` +
+    `These results suggest that the configuration ${bcrQ > 1 || bcrSav > 1 || bcrW > 1 ? "could represent a sound use of resources, subject to budget constraints and implementation capacity" : "may require further refinement to improve both uptake and value for money"}.`;
+
+  textarea.value = text;
+}
+
+/***************************************************************************
+ * WTP chart and WTP benefits
+ ***************************************************************************/
+
+let wtpChartInstance = null;
+
+function renderWTPChart() {
+  const canvas = document.getElementById("wtpChartMain");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (wtpChartInstance) wtpChartInstance.destroy();
+
+  const labels = wtpDataMain.map(d => d.label);
+  const values = wtpDataMain.map(d => d.wtp);
+  const errors = wtpDataMain.map(d => d.se);
+
+  const dataConfig = {
+    labels,
+    datasets: [{
+      label: "WTP (A$ per session)",
+      data: values,
+      error: errors
+    }]
+  };
+
+  wtpChartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: dataConfig.labels,
+      datasets: [{
+        label: "WTP (A$ per session)",
+        data: dataConfig.datasets[0].data,
+        backgroundColor: dataConfig.datasets[0].data.map(v => v >= 0 ? "rgba(0,123,255,0.7)" : "rgba(220,53,69,0.7)"),
+        borderColor: dataConfig.datasets[0].data.map(v => v >= 0 ? "rgba(0,123,255,1)" : "rgba(220,53,69,1)"),
+        borderWidth: 1
+      }]
     },
-    lastResults: null,
-    modelLabel: "Main sample (mixed logit)" // Label for model column
-  };
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: "Willingness to pay for attribute levels",
+          font: { size: 14 }
+        },
+        tooltip: {
+          callbacks: {
+            afterBody: (ctxArr) => {
+              const idx = ctxArr[0].dataIndex;
+              const rec = wtpDataMain[idx];
+              return `Standard error: ${rec.se}, p-value: ${rec.pVal}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "A$ per participant per session" }
+        }
+      }
+    },
+    plugins: [{
+      id: "errorbars",
+      afterDraw: chart => {
+        const { ctx, scales: { y } } = chart;
+        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+          const value = values[i];
+          const se = errors[i];
+          if (typeof se !== "number") return;
 
-  /***************************************************************************
-   * Main DCE Coefficients & Cost Multipliers
-   * (from main LonelyLess mixed logit model)
-   ***************************************************************************/
+          const x = bar.x;
+          const topY = y.getPixelForValue(value + se);
+          const bottomY = y.getPixelForValue(value - se);
 
-  const mainCoefficients = {
-    ASC_mean: -0.112,
-    ASC_sd: 1.161,
-    ASC_optout: 0.131,
-    type_comm: 0.527,
-    type_psych: 0.156,
-    type_vr: -0.349,
-    mode_virtual: -0.426,
-    mode_hybrid: -0.289,
-    freq_weekly: 0.617,
-    freq_monthly: 0.336,
-    dur_2hrs: 0.185,
-    dur_4hrs: 0.213,
-    dist_local: 0.059,
-    dist_signif: -0.509,
-    cost_cont: -0.036
-  };
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(x, topY);
+          ctx.lineTo(x, bottomY);
+          ctx.moveTo(x - 4, topY);
+          ctx.lineTo(x + 4, topY);
+          ctx.moveTo(x - 4, bottomY);
+          ctx.lineTo(x + 4, bottomY);
+          ctx.strokeStyle = "#222";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
+    }]
+  });
+}
 
-  const costOfLivingMultipliers = {
-    NSW: 1.10,
-    VIC: 1.05,
-    QLD: 1.00,
-    WA: 1.08,
-    SA: 1.02,
-    TAS: 1.03,
-    ACT: 1.15,
-    NT: 1.07
-  };
+function updateWTPBenefitsForCurrentScenario() {
+  const res = getFullResultsForScenario();
+  if (!res) return;
+  const div = document.getElementById("wtpBenefitSummary");
+  if (!div) return;
+  const s = res.scenario;
 
-  /***************************************************************************
-   * WTP Data (AUD per person per month)
-   ***************************************************************************/
+  const html =
+    `<p><strong>Average willingness to pay per participant per session:</strong> A$${res.wtpPerParticipantSession.toFixed(2)}</p>` +
+    `<p><strong>Average willingness to pay per participant per programme (12 sessions):</strong> A$${res.wtpPerParticipantProgram.toFixed(2)}</p>` +
+    `<p><strong>Total willingness to pay based benefits:</strong> A$${formatMoney(res.totalWTPBenefits)}</p>` +
+    `<p>These values summarise how strongly older adults in the discrete choice study valued this configuration, based on the trade offs they made between programme features and cost.</p>`;
 
-  const wtpDataMain = [
-    { attribute: "Community engagement", wtp: 14.47, pVal: 0.000, se: 3.31 },
-    { attribute: "Psychological counselling", wtp: 4.28, pVal: 0.245, se: 3.76 },
-    { attribute: "Virtual reality", wtp: -9.58, pVal: 0.009, se: 3.72 },
-    { attribute: "Virtual (method)", wtp: -11.69, pVal: 0.019, se: 5.02 },
-    { attribute: "Hybrid (method)", wtp: -7.95, pVal: 0.001, se: 2.51 },
-    { attribute: "Weekly (freq)", wtp: 16.93, pVal: 0.000, se: 2.73 },
-    { attribute: "Monthly (freq)", wtp: 9.21, pVal: 0.005, se: 3.26 },
-    { attribute: "2-hour interaction", wtp: 5.08, pVal: 0.059, se: 2.69 },
-    { attribute: "4-hour interaction", wtp: 5.85, pVal: 0.037, se: 2.79 },
-    { attribute: "Local area accessibility", wtp: 1.62, pVal: 0.712, se: 4.41 },
-    { attribute: "Wider community accessibility", wtp: -13.99, pVal: 0.000, se: 3.98 }
+  div.innerHTML = html;
+}
+
+/***************************************************************************
+ * Programme uptake chart
+ ***************************************************************************/
+
+let uptakeChart = null;
+
+function renderProbChart() {
+  const res = getFullResultsForScenario();
+  if (!res) return;
+
+  drawUptakeChart(res.uptakePercent);
+  const div = document.getElementById("uptakeInterpretation");
+  if (!div) return;
+
+  const up = res.uptakePercent;
+  let explanation;
+
+  if (up >= 70) {
+    explanation =
+      "Projected uptake is high. The configuration aligns well with older adults stated preferences, " +
+      "suggesting that most eligible participants would consider joining the programme.";
+  } else if (up >= 50) {
+    explanation =
+      "Projected uptake is moderate. Many older adults would join, but some design adjustments around cost, " +
+      "location or delivery method could further strengthen appeal.";
+  } else {
+    explanation =
+      "Projected uptake is modest. It may be important to revisit core features, such as participant fees, " +
+      "frequency or venue location, to improve engagement.";
+  }
+
+  div.innerHTML = `<p>${explanation}</p>`;
+}
+
+function drawUptakeChart(uptakeVal) {
+  const canvas = document.getElementById("uptakeChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (uptakeChart) uptakeChart.destroy();
+
+  const nonUptake = 100 - uptakeVal;
+
+  uptakeChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Uptake", "Non uptake"],
+      datasets: [{
+        data: [uptakeVal, nonUptake],
+        backgroundColor: ["#28a745", "#dc3545"]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" },
+        title: {
+          display: true,
+          text: `Predicted programme uptake: ${uptakeVal.toFixed(1)} percent`
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${ctx.parsed.toFixed(1)} percent`
+          }
+        }
+      }
+    }
+  });
+}
+
+/***************************************************************************
+ * Costs and benefits combined chart
+ ***************************************************************************/
+
+let combinedChartInstance = null;
+
+function renderCostsBenefits(preComputed) {
+  const res = preComputed || getFullResultsForScenario();
+  if (!res) return;
+
+  const container = document.getElementById("costsBenefitsResults");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const summaryDiv = document.createElement("div");
+  summaryDiv.className = "card secondary-card";
+
+  const s = res.scenario;
+
+  const html =
+    `<h3>Cost and benefit summary</h3>` +
+    `<p><strong>Predicted uptake:</strong> ${res.uptakePercent.toFixed(1)} percent</p>` +
+    `<p><strong>Participants (base cohort of ${BASE_PARTICIPANTS}):</strong> ${res.participants.toFixed(0)}</p>` +
+    `<p><strong>Total economic cost:</strong> A$${formatMoney(res.totalEconomicCost)}${s.includeOppCost ? " (includes opportunity cost of participant time)" : ""}</p>` +
+    `<p><strong>Cost per participant:</strong> A$${res.participants > 0 ? (res.totalEconomicCost / res.participants).toFixed(2) : "n.a."}</p>` +
+    `<p><strong>Monetised QALY benefits:</strong> A$${formatMoney(res.qalyMonetised)} (scenario: ${res.qalyScenario}, value per QALY A$${VALUE_PER_QALY.toLocaleString()})</p>` +
+    `<p><strong>Health system and productivity savings (5 years):</strong> A$${formatMoney(res.totalSavings)} (health: A$${formatMoney(res.healthSavings)}, productivity: A$${formatMoney(res.productivitySavings)})</p>` +
+    `<p><strong>WTP based benefits:</strong> A$${formatMoney(res.totalWTPBenefits)}</p>` +
+    `<p><strong>Loneliness free days (5 years):</strong> ${res.lonelinessFreeDays.toFixed(0)}</p>` +
+    `<p><strong>Net benefit (QALY):</strong> A$${formatMoney(res.netBenefitQALY)}</p>` +
+    `<p><strong>Net benefit (cost savings):</strong> A$${formatMoney(res.netBenefitSavings)}</p>` +
+    `<p><strong>Net benefit (WTP):</strong> A$${formatMoney(res.netBenefitWTP)}</p>` +
+    `<p><strong>Benefit cost ratio (QALY):</strong> ${res.bcrQALY ? res.bcrQALY.toFixed(2) : "n.a."}</p>` +
+    `<p><strong>Benefit cost ratio (cost savings):</strong> ${res.bcrSavings ? res.bcrSavings.toFixed(2) : "n.a."}</p>` +
+    `<p><strong>Benefit cost ratio (WTP):</strong> ${res.bcrWTP ? res.bcrWTP.toFixed(2) : "n.a."}</p>` +
+    `<p>These metrics combine evidence on programme costs, health outcomes, cost savings and participant preferences. Full methods and data sources are described in the technical appendix.</p>`;
+
+  summaryDiv.innerHTML = html;
+  container.appendChild(summaryDiv);
+
+  const chartWrapper = document.createElement("div");
+  chartWrapper.className = "chart-box";
+  chartWrapper.innerHTML = `<h3>Costs and benefits</h3><canvas id="combinedChart"></canvas>`;
+  container.appendChild(chartWrapper);
+
+  const canvas = document.getElementById("combinedChart");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (combinedChartInstance) combinedChartInstance.destroy();
+
+  const labels = ["Total economic cost", "QALY benefits", "Cost savings", "WTP benefits"];
+  const values = [
+    res.totalEconomicCost,
+    res.qalyMonetised,
+    res.totalSavings,
+    res.totalWTPBenefits
   ];
 
-  /* ===========================
-     Helpers
-     =========================== */
-
-  function logistic(x) {
-    if (x > 50) return 1;
-    if (x < -50) return 0;
-    return 1 / (1 + Math.exp(-x));
-  }
-
-  function wtpFor(attributeName) {
-    const row = wtpDataMain.find(d => d.attribute === attributeName);
-    return row ? row.wtp : 0;
-  }
-
-  /* ===========================
-     Read configuration from form
-     =========================== */
-
-  function readConfigurationFromInputs() {
-    // Service type: community / psychology / VR
-    const serviceType =
-      (document.getElementById("service-type") || {}).value || "comm"; // "comm" | "psych" | "vr"
-
-    // Delivery method: in-person / virtual / hybrid
-    const mode =
-      (document.getElementById("mode") || {}).value || "inperson"; // "inperson" | "virtual" | "hybrid"
-
-    // Participation frequency: weekly / fortnightly / monthly
-    const frequency =
-      (document.getElementById("frequency") || {}).value || "weekly"; // "weekly" | "fortnightly" | "monthly"
-
-    // Session duration: 1hr / 2hrs / 4hrs
-    const duration =
-      (document.getElementById("duration") || {}).value || "2hrs"; // "1hr" | "2hrs" | "4hrs"
-
-    // Accessibility / distance: local vs wider community
-    const distance =
-      (document.getElementById("distance") || {}).value || "local"; // "local" | "wider"
-
-    // Region / state for cost-of-living adjustment
-    const regionEl = document.getElementById("region-select");
-    const region = regionEl ? regionEl.value || "NSW" : "NSW";
-    const multiplier = costOfLivingMultipliers[region] || 1.0;
-
-    // Base cost from slider (AUD per person per month, before regional adjustment)
-    const costSlider = document.getElementById("cost-slider");
-    const baseCost =
-      costSlider ? parseFloat(costSlider.value) || 0 : 0;
-
-    const costPerParticipantPerMonth = baseCost * multiplier;
-
-    // Scale: number of participants and groups
-    const participantsInput = document.getElementById("trainees");
-    const groupsInput = document.getElementById("cohorts");
-
-    const participantsPerGroup = participantsInput
-      ? parseInt(participantsInput.value, 10) || 0
-      : 0;
-
-    const numberOfGroups = groupsInput
-      ? parseInt(groupsInput.value, 10) || 0
-      : 0;
-
-    // Programme horizon in months (optional input)
-    const monthsInput = document.getElementById("programme-months");
-    let programmeMonths = 12;
-    if (monthsInput) {
-      const mv = parseFloat(monthsInput.value);
-      if (!isNaN(mv) && mv > 0) programmeMonths = mv;
-    }
-
-    const nameInput = document.getElementById("scenario-name");
-    const notesInput = document.getElementById("scenario-notes");
-
-    return {
-      serviceType,           // comm / psych / vr
-      mode,                  // inperson / virtual / hybrid
-      frequency,             // weekly / fortnightly / monthly
-      duration,              // 1hr / 2hrs / 4hrs
-      distance,              // local / wider
-      region,                // NSW, VIC, ...
-      baseCostPerParticipantPerMonth: baseCost,
-      costPerParticipantPerMonth,    // adjusted for region
-      participantsPerGroup,
-      numberOfGroups,
-      programmeMonths,
-      scenarioName: nameInput ? nameInput.value.trim() : "",
-      scenarioNotes: notesInput ? notesInput.value.trim() : ""
-    };
-  }
-
-  /* ===========================
-     DCE utility and endorsement
-     =========================== */
-
-  function computeAttributeUtility(cfg) {
-    let u = 0;
-
-    // Service type
-    if (cfg.serviceType === "comm") {
-      u += mainCoefficients.type_comm;
-    } else if (cfg.serviceType === "psych") {
-      u += mainCoefficients.type_psych;
-    } else if (cfg.serviceType === "vr") {
-      u += mainCoefficients.type_vr;
-    }
-
-    // Delivery method (reference: in-person)
-    if (cfg.mode === "virtual") {
-      u += mainCoefficients.mode_virtual;
-    } else if (cfg.mode === "hybrid") {
-      u += mainCoefficients.mode_hybrid;
-    }
-
-    // Frequency (reference: fortnightly or base)
-    if (cfg.frequency === "weekly") {
-      u += mainCoefficients.freq_weekly;
-    } else if (cfg.frequency === "monthly") {
-      u += mainCoefficients.freq_monthly;
-    }
-
-    // Duration (reference: 1 hour)
-    if (cfg.duration === "2hrs") {
-      u += mainCoefficients.dur_2hrs;
-    } else if (cfg.duration === "4hrs") {
-      u += mainCoefficients.dur_4hrs;
-    }
-
-    // Accessibility / distance (reference: closest/standard)
-    if (cfg.distance === "local") {
-      u += mainCoefficients.dist_local;
-    } else if (cfg.distance === "wider") {
-      u += mainCoefficients.dist_signif;
-    }
-
-    return u;
-  }
-
-  function computeEndorsement(cfg) {
-    const baseUtility = computeAttributeUtility(cfg);
-
-    const ascProg = mainCoefficients.ASC_mean || 0;
-    const ascOpt = mainCoefficients.ASC_optout || 0;
-    const costBeta = mainCoefficients.cost_cont || 0;
-
-    const costTerm = costBeta * cfg.costPerParticipantPerMonth;
-
-    const U_prog = ascProg + baseUtility + costTerm;
-    const U_opt = ascOpt;
-
-    const expP = Math.exp(U_prog);
-    const expO = Math.exp(U_opt);
-    const denom = expP + expO;
-
-    const endorseProb = denom === 0 ? 0 : expP / denom;
-    const optoutProb = denom === 0 ? 1 : expO / denom;
-
-    return {
-      endorseProb,
-      optoutProb,
-      baseUtility,
-      ascProg,
-      ascOpt,
-      costTerm
-    };
-  }
-
-  /* ===========================
-     Scenario-level WTP
-     (sum of WTP for included attributes)
-     =========================== */
-
-  function computeWtpPerParticipantPerMonth(cfg) {
-    let wtp = 0;
-
-    // Service type
-    if (cfg.serviceType === "comm") {
-      wtp += wtpFor("Community engagement");
-    } else if (cfg.serviceType === "psych") {
-      wtp += wtpFor("Psychological counselling");
-    } else if (cfg.serviceType === "vr") {
-      wtp += wtpFor("Virtual reality");
-    }
-
-    // Delivery method
-    if (cfg.mode === "virtual") {
-      wtp += wtpFor("Virtual (method)");
-    } else if (cfg.mode === "hybrid") {
-      wtp += wtpFor("Hybrid (method)");
-    }
-
-    // Frequency
-    if (cfg.frequency === "weekly") {
-      wtp += wtpFor("Weekly (freq)");
-    } else if (cfg.frequency === "monthly") {
-      wtp += wtpFor("Monthly (freq)");
-    }
-
-    // Duration
-    if (cfg.duration === "2hrs") {
-      wtp += wtpFor("2-hour interaction");
-    } else if (cfg.duration === "4hrs") {
-      wtp += wtpFor("4-hour interaction");
-    }
-
-    // Accessibility
-    if (cfg.distance === "local") {
-      wtp += wtpFor("Local area accessibility");
-    } else if (cfg.distance === "wider") {
-      wtp += wtpFor("Wider community accessibility");
-    }
-
-    // WTP is in AUD per person per month
-    return wtp;
-  }
-
-  /* ===========================
-     Cost and benefit calculations
-     =========================== */
-
-  function getOppCostRate() {
-    // Opportunity cost as share of direct programme cost
-    return state.includeOppCost ? 0.2 : 0.0; // 20% default
-  }
-
-  function computeCostsAndBenefits(cfg) {
-    const util = computeEndorsement(cfg);
-
-    const durationMonths = cfg.programmeMonths || 12;
-    const participantsPerGroup = cfg.participantsPerGroup;
-    const groups = cfg.numberOfGroups;
-
-    // Direct programme cost per group over full horizon
-    const directCostPerGroup =
-      cfg.costPerParticipantPerMonth * participantsPerGroup * durationMonths;
-
-    // Opportunity cost
-    const oppRate = getOppCostRate();
-    const oppCostPerGroup = directCostPerGroup * oppRate;
-
-    const totalEconomicCostPerGroup = directCostPerGroup + oppCostPerGroup;
-    const totalCostAllGroups = totalEconomicCostPerGroup * groups;
-
-    // WTP per participant per month from main WTP estimates
-    const wtpPerParticipantPerMonth = computeWtpPerParticipantPerMonth(cfg);
-    let wtpPerGroup = null;
-    let totalWtpAllGroups = null;
-
-    if (typeof wtpPerParticipantPerMonth === "number") {
-      wtpPerGroup =
-        wtpPerParticipantPerMonth *
-        participantsPerGroup *
-        durationMonths;
-      totalWtpAllGroups = wtpPerGroup * groups;
-    }
-
-    const netBenefitAllGroups =
-      totalWtpAllGroups !== null
-        ? totalWtpAllGroups - totalCostAllGroups
-        : null;
-
-    const bcr =
-      totalWtpAllGroups !== null && totalCostAllGroups > 0
-        ? totalWtpAllGroups / totalCostAllGroups
-        : null;
-
-    const effectiveBenefit =
-      totalWtpAllGroups !== null
-        ? totalWtpAllGroups * util.endorseProb
-        : null;
-
-    return {
-      cfg,
-      util,
-      durationMonths,
-      directCostPerGroup,
-      oppCostPerGroup,
-      totalEconomicCostPerGroup,
-      totalCostAllGroups,
-      wtpPerParticipantPerMonth,
-      wtpPerGroup,
-      totalWtpAllGroups,
-      netBenefitAllGroups,
-      bcr,
-      effectiveBenefit
-    };
-  }
-
-  /* ===========================
-     Formatting helpers
-     =========================== */
-
-  function formatNumber(value, decimals = 0) {
-    if (value === null || value === undefined || isNaN(value)) return "-";
-    return value.toLocaleString("en-AU", {
-      maximumFractionDigits: decimals,
-      minimumFractionDigits: decimals
-    });
-  }
-
-  function formatPercent(value, decimals = 1) {
-    if (value === null || value === undefined || !isFinite(value)) return "-";
-    const pct = value * 100;
-    return `${pct.toFixed(decimals)} %`;
-  }
-
-  function formatCurrency(valueInAud, decimals = 0) {
-    if (valueInAud === null || valueInAud === undefined || isNaN(valueInAud))
-      return "-";
-
-    if (state.currency === "USD") {
-      const rate = 1.5; // placeholder AUD per USD
-      const valueUsd = valueInAud / rate;
-      return `USD ${valueUsd.toLocaleString("en-US", {
-        maximumFractionDigits: 1,
-        minimumFractionDigits: 1
-      })}`;
-    }
-
-    return `AUD ${valueInAud.toLocaleString("en-AU", {
-      maximumFractionDigits: decimals,
-      minimumFractionDigits: decimals
-    })}`;
-  }
-
-  function setText(id, text) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = text;
-  }
-
-  function showToast(message, kind = "success") {
-    const toast = document.getElementById("toast");
-    if (!toast) return;
-    toast.textContent = message;
-    toast.classList.remove(
-      "toast-success",
-      "toast-warning",
-      "toast-error",
-      "hidden"
-    );
-    if (kind === "success") toast.classList.add("toast-success");
-    if (kind === "warning") toast.classList.add("toast-warning");
-    if (kind === "error") toast.classList.add("toast-error");
-    toast.classList.add("show");
-    if (showToast._timeout) clearTimeout(showToast._timeout);
-    showToast._timeout = setTimeout(() => {
-      toast.classList.remove("show");
-    }, 3500);
-  }
-
-  /* ===========================
-     Pretty labels
-     =========================== */
-
-  function prettyServiceType(t) {
-    if (t === "psych") return "Psychological counselling";
-    if (t === "vr") return "Virtual reality";
-    return "Community engagement";
-  }
-
-  function prettyMode(m) {
-    if (m === "virtual") return "Virtual delivery";
-    if (m === "hybrid") return "Hybrid (online and in person)";
-    return "In-person sessions";
-  }
-
-  function prettyFrequency(f) {
-    if (f === "weekly") return "Weekly participation";
-    if (f === "monthly") return "Monthly participation";
-    return "Fortnightly participation";
-  }
-
-  function prettyDuration(d) {
-    if (d === "1hr") return "1-hour sessions";
-    if (d === "4hrs") return "4-hour sessions";
-    return "2-hour sessions";
-  }
-
-  function prettyDistance(d) {
-    if (d === "wider") return "Wider community locations";
-    return "Local area / nearby locations";
-  }
-
-  /* ===========================
-     Configuration summary UI
-     =========================== */
-
-  function updateConfigSummary(results) {
-    const cfg = results.cfg;
-    const summaryEl = document.getElementById("config-summary");
-    if (!summaryEl) return;
-
-    summaryEl.innerHTML = "";
-
-    const rows = [
-      ["Programme type", prettyServiceType(cfg.serviceType)],
-      ["Delivery method", prettyMode(cfg.mode)],
-      ["Participation frequency", prettyFrequency(cfg.frequency)],
-      ["Session length", prettyDuration(cfg.duration)],
-      ["Accessibility", prettyDistance(cfg.distance)],
-      ["Region (cost-of-living)", cfg.region],
-      ["Participants per group", formatNumber(cfg.participantsPerGroup)],
-      ["Number of groups", formatNumber(cfg.numberOfGroups)],
-      ["Programme horizon", `${formatNumber(cfg.programmeMonths, 0)} months`],
-      [
-        "Cost per participant per month",
-        `${formatCurrency(cfg.costPerParticipantPerMonth)} (adjusted)`
-      ],
-      [
-        "Base cost (before regional adjustment)",
-        formatCurrency(cfg.baseCostPerParticipantPerMonth)
-      ],
-      [
-        "Model",
-        state.modelLabel
-      ]
-    ];
-
-    rows.forEach(([label, value]) => {
-      const row = document.createElement("div");
-      row.className = "config-summary-row";
-      const left = document.createElement("div");
-      left.className = "config-summary-label";
-      left.textContent = label;
-      const right = document.createElement("div");
-      right.className = "config-summary-value";
-      right.textContent = value;
-      row.appendChild(left);
-      row.appendChild(right);
-      summaryEl.appendChild(row);
-    });
-
-    setText(
-      "config-endorsement-value",
-      formatPercent(results.util.endorseProb, 1)
-    );
-
-    const statusTag = document.getElementById("headline-status-tag");
-    const headline = document.getElementById("headline-recommendation");
-    const briefing = document.getElementById("headline-briefing-text");
-
-    if (!statusTag || !headline || !briefing) return;
-
-    statusTag.className = "status-pill status-neutral";
-    statusTag.textContent = "Assessment pending";
-
-    if (results.bcr !== null) {
-      if (results.bcr >= 1.5) {
-        statusTag.className = "status-pill status-good";
-        statusTag.textContent = "Strong value for money";
-      } else if (results.bcr >= 1.0) {
-        statusTag.className = "status-pill status-warning";
-        statusTag.textContent = "Borderline value for money";
-      } else {
-        statusTag.className = "status-pill status-poor";
-        statusTag.textContent = "Costs likely exceed benefits";
-      }
-    }
-
-    headline.textContent =
-      results.bcr === null
-        ? "Configure the intervention and cost assumptions to see whether the benefits of reducing loneliness are likely to justify the costs."
-        : `With an estimated endorsement of ${formatPercent(
-            results.util.endorseProb,
-            1
-          )}, a benefit–cost ratio of ${
-            results.bcr ? results.bcr.toFixed(2) : "-"
-          } and total costs of ${formatCurrency(
-            results.totalCostAllGroups
-          )}, this configuration offers a ${
-            results.bcr && results.bcr >= 1 ? "promising" : "weaker"
-          } balance between value and cost.`;
-
-    briefing.textContent =
-      `In this scenario, a ${prettyServiceType(
-        cfg.serviceType
-      ).toLowerCase()} programme is delivered as ${prettyMode(
-        cfg.mode
-      ).toLowerCase()} with ${prettyFrequency(
-        cfg.frequency
-      ).toLowerCase()} ${prettyDuration(
-        cfg.duration
-      ).toLowerCase()} in ${prettyDistance(
-        cfg.distance
-      ).toLowerCase()}. It targets ${formatNumber(
-        cfg.participantsPerGroup,
-        0
-      )} participants per group across ${formatNumber(
-        cfg.numberOfGroups,
-        0
-      )} groups over ${formatNumber(
-        cfg.programmeMonths,
-        0
-      )} months. ` +
-      `The main DCE model implies that around ${formatPercent(
-        results.util.endorseProb,
-        1
-      )} of older adults would be willing to take up this offer at a cost of ${formatCurrency(
-        cfg.costPerParticipantPerMonth
-      )} per person per month (after adjusting for cost-of-living in ${cfg.region}). ` +
-      `Total economic costs are approximately ${formatCurrency(
-        results.totalCostAllGroups
-      )}, while preference-based benefits are around ${formatCurrency(
-        results.totalWtpAllGroups || 0
-      )}, giving a benefit–cost ratio of ${
-        results.bcr ? results.bcr.toFixed(2) : "-"
-      } under the current assumptions.`;
-  }
-
-  /* ===========================
-     Results tab
-     =========================== */
-
-  function updateResultsTab(results) {
-    setText(
-      "endorsement-rate",
-      formatPercent(results.util.endorseProb, 1)
-    );
-    setText("optout-rate", formatPercent(results.util.optoutProb, 1));
-
-    setText(
-      "wtp-per-trainee",
-      results.wtpPerParticipantPerMonth === null
-        ? "-"
-        : formatCurrency(results.wtpPerParticipantPerMonth, 1)
-    );
-    setText(
-      "wtp-total-cohort",
-      results.wtpPerGroup === null
-        ? "-"
-        : formatCurrency(results.wtpPerGroup)
-    );
-
-    setText(
-      "prog-cost-per-cohort",
-      formatCurrency(results.directCostPerGroup)
-    );
-    setText(
-      "total-cost",
-      formatCurrency(results.totalEconomicCostPerGroup)
-    );
-
-    setText(
-      "net-benefit",
-      results.netBenefitAllGroups === null
-        ? "-"
-        : formatCurrency(results.netBenefitAllGroups)
-    );
-    setText(
-      "bcr",
-      results.bcr === null ? "-" : results.bcr.toFixed(2)
-    );
-
-    // Reach and endorsement (interpreted as community reach)
-    const totalParticipants =
-      results.cfg.participantsPerGroup * results.cfg.numberOfGroups;
-    const endorsedParticipants =
-      totalParticipants * results.util.endorseProb;
-
-    setText(
-      "epi-graduates",
-      formatNumber(endorsedParticipants, 0)
-    );
-    setText(
-      "epi-outbreaks",
-      formatNumber(totalParticipants, 0)
-    );
-    setText(
-      "epi-benefit",
-      results.totalWtpAllGroups === null
-        ? "-"
-        : formatCurrency(results.totalWtpAllGroups)
-    );
-
-    updateCharts(results);
-  }
-
-  /* ===========================
-     Charts (Chart.js)
-     =========================== */
-
-  function updateCharts(results) {
-    const ChartLib = window.Chart;
-    if (!ChartLib) return;
-
-    // Uptake chart
-    const uptakeCtx = document.getElementById("chart-uptake");
-    if (uptakeCtx) {
-      if (state.charts.uptake) state.charts.uptake.destroy();
-      state.charts.uptake = new ChartLib(uptakeCtx, {
-        type: "doughnut",
-        data: {
-          labels: ["Endorse programme", "Prefer status quo"],
-          datasets: [
-            {
-              data: [
-                Math.round(results.util.endorseProb * 100),
-                Math.round(results.util.optoutProb * 100)
-              ]
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: "bottom" },
-            tooltip: {
-              callbacks: {
-                label(ctx) {
-                  const v = ctx.parsed;
-                  return `${ctx.label}: ${v.toFixed(1)} %`;
-                }
-              }
-            }
-          }
+  combinedChartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "A$",
+        data: values,
+        backgroundColor: [
+          "rgba(220,53,69,0.7)",
+          "rgba(40,167,69,0.7)",
+          "rgba(23,162,184,0.7)",
+          "rgba(255,193,7,0.7)"
+        ],
+        borderColor: [
+          "rgba(220,53,69,1)",
+          "rgba(40,167,69,1)",
+          "rgba(23,162,184,1)",
+          "rgba(255,193,7,1)"
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: "Comparison of costs and benefit measures",
+          font: { size: 13 }
         }
-      });
-    }
-
-    // Cost vs benefit chart
-    const bcrCtx = document.getElementById("chart-bcr");
-    if (bcrCtx) {
-      if (state.charts.bcr) state.charts.bcr.destroy();
-      state.charts.bcr = new ChartLib(bcrCtx, {
-        type: "bar",
-        data: {
-          labels: ["Total economic cost", "Total WTP benefit"],
-          datasets: [
-            {
-              data: [
-                results.totalCostAllGroups || 0,
-                results.totalWtpAllGroups || 0
-              ]
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              ticks: {
-                callback(value) {
-                  return value >= 1_000_000
-                    ? (value / 1_000_000).toFixed(1) + "m"
-                    : value >= 1_000
-                    ? (value / 1_000).toFixed(1) + "k"
-                    : value;
-                }
-              }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label(ctx) {
-                  return formatCurrency(ctx.parsed.y);
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // Reach chart (interpreted as participants reached)
-    const epiCtx = document.getElementById("chart-epi");
-    if (epiCtx) {
-      if (state.charts.epi) state.charts.epi.destroy();
-      const totalParticipants =
-        results.cfg.participantsPerGroup * results.cfg.numberOfGroups;
-      const endorsedParticipants =
-        totalParticipants * results.util.endorseProb;
-      state.charts.epi = new ChartLib(epiCtx, {
-        type: "bar",
-        data: {
-          labels: ["Total participants", "Participants in endorsed programme"],
-          datasets: [
-            {
-              data: [totalParticipants, endorsedParticipants]
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false }
-          }
-        }
-      });
-    }
-  }
-
-  /* ===========================
-     Costing tab
-     =========================== */
-
-  function updateCostingTab(results) {
-    const summary = document.getElementById("cost-breakdown-summary");
-    if (summary) {
-      summary.innerHTML = "";
-
-      const items = [
-        {
-          label: "Direct programme cost per group",
-          value: formatCurrency(results.directCostPerGroup)
-        },
-        {
-          label: "Opportunity cost per group",
-          value: formatCurrency(results.oppCostPerGroup)
-        },
-        {
-          label: "Total economic cost per group",
-          value: formatCurrency(results.totalEconomicCostPerGroup)
-        },
-        {
-          label: "Total economic cost (all groups)",
-          value: formatCurrency(results.totalCostAllGroups)
-        }
-      ];
-
-      items.forEach(it => {
-        const card = document.createElement("div");
-        card.className = "cost-summary-card";
-        const l = document.createElement("div");
-        l.className = "cost-summary-label";
-        l.textContent = it.label;
-        const v = document.createElement("div");
-        v.className = "cost-summary-value";
-        v.textContent = it.value;
-        card.appendChild(l);
-        card.appendChild(v);
-        summary.appendChild(card);
-      });
-    }
-
-    const tbody = document.getElementById("cost-components-list");
-    if (tbody) {
-      tbody.innerHTML = "";
-      const durationMonths = results.durationMonths;
-      const ppg = results.cfg.participantsPerGroup;
-
-      const shares = [
-        { label: "Facilitators and staff time", share: 0.45 },
-        { label: "Venue and overheads", share: 0.25 },
-        { label: "Materials and digital tools", share: 0.15 },
-        { label: "Coordination and management", share: 0.15 }
-      ];
-
-      shares.forEach(comp => {
-        const amountPerGroup =
-          results.directCostPerGroup * comp.share;
-        const perParticipantPerMonth =
-          durationMonths > 0 && ppg > 0
-            ? amountPerGroup / (durationMonths * ppg)
-            : 0;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${comp.label}</td>
-          <td>${(comp.share * 100).toFixed(0)} %</td>
-          <td class="numeric-cell">${formatCurrency(amountPerGroup)}</td>
-          <td class="numeric-cell">${formatCurrency(perParticipantPerMonth)}</td>
-          <td>Illustrative share of direct programme cost (can be refined for specific implementations).</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-  }
-
-  /* ===========================
-     National simulation tab
-     =========================== */
-
-  function updateNationalSimulation(results) {
-    const totalCost = results.totalCostAllGroups;
-    const totalBenefit = results.totalWtpAllGroups || 0;
-    const net = results.netBenefitAllGroups || (totalBenefit - totalCost);
-    const bcrNat =
-      totalCost > 0 ? totalBenefit / totalCost : results.bcr;
-
-    const totalParticipants =
-      results.cfg.participantsPerGroup * results.cfg.numberOfGroups;
-    const endorsedParticipants =
-      totalParticipants * results.util.endorseProb;
-
-    setText("nat-total-cost", formatCurrency(totalCost));
-    setText("nat-total-benefit", formatCurrency(totalBenefit));
-    setText("nat-net-benefit", formatCurrency(net));
-    setText(
-      "nat-bcr",
-      bcrNat === null ? "-" : bcrNat.toFixed(2)
-    );
-    setText(
-      "nat-total-wtp",
-      formatCurrency(totalBenefit)
-    );
-    setText("nat-graduates", formatNumber(endorsedParticipants, 0));
-    setText("nat-outbreaks", formatNumber(totalParticipants, 0));
-
-    const summary = document.getElementById("natsim-summary-text");
-    if (summary) {
-      summary.textContent =
-        `At this scale the programme would reach around ${formatNumber(
-          totalParticipants,
-          0
-        )} older adults, with approximately ${formatNumber(
-          endorsedParticipants,
-          0
-        )} participating in the endorsed configuration given current preferences. ` +
-        `Total economic costs are about ${formatCurrency(
-          totalCost
-        )}, with preference-based benefits of ${formatCurrency(
-          totalBenefit
-        )} and a national benefit–cost ratio of ${
-          bcrNat ? bcrNat.toFixed(2) : "-"
-        }.`;
-    }
-
-    const ChartLib = window.Chart;
-    if (!ChartLib) return;
-
-    const natCostCtx = document.getElementById("chart-nat-cost-benefit");
-    if (natCostCtx) {
-      if (state.charts.natCostBenefit) state.charts.natCostBenefit.destroy();
-      state.charts.natCostBenefit = new ChartLib(natCostCtx, {
-        type: "bar",
-        data: {
-          labels: ["Total economic cost", "Total WTP benefit"],
-          datasets: [
-            {
-              data: [totalCost || 0, totalBenefit || 0]
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } }
-        }
-      });
-    }
-
-    const natEpiCtx = document.getElementById("chart-nat-epi");
-    if (natEpiCtx) {
-      if (state.charts.natEpi) state.charts.natEpi.destroy();
-      state.charts.natEpi = new ChartLib(natEpiCtx, {
-        type: "bar",
-        data: {
-          labels: ["Total participants", "Participants in endorsed programme"],
-          datasets: [
-            {
-              data: [totalParticipants || 0, endorsedParticipants || 0]
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } }
-        }
-      });
-    }
-  }
-
-  /* ===========================
-     Sensitivity / DCE benefits tab
-     =========================== */
-
-  function updateSensitivityTab() {
-    const baseResults = state.lastResults;
-    if (!baseResults) return;
-
-    const scenarios = [
-      {
-        label: "Current configuration",
-        results: baseResults
       },
-      ...state.scenarios.map(s => ({
-        label: s.name || "Saved scenario",
-        results: s.results
-      }))
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "A$" }
+        }
+      }
+    }
+  });
+}
+
+/***************************************************************************
+ * Toggle panels in costs tab
+ ***************************************************************************/
+
+function toggleCostBreakdown() {
+  const breakdown = document.getElementById("detailedCostBreakdown");
+  if (!breakdown) return;
+  breakdown.style.display = (breakdown.style.display === "none" || breakdown.style.display === "") ? "flex" : "none";
+}
+
+function toggleBenefitsAnalysis() {
+  const panel = document.getElementById("detailedBenefitsAnalysis");
+  if (!panel) return;
+  panel.style.display = (panel.style.display === "none" || panel.style.display === "") ? "flex" : "none";
+}
+
+/***************************************************************************
+ * Scenario saving and PDF export
+ ***************************************************************************/
+
+const savedScenarios = [];
+
+function saveScenario() {
+  const res = getFullResultsForScenario();
+  if (!res) return;
+
+  const index = savedScenarios.length + 1;
+  const name = res.scenario.scenarioName || `Scenario ${index}`;
+  const record = { index, name, ...res };
+
+  savedScenarios.push(record);
+  appendScenarioRow(record);
+  showToast(`Scenario "${name}" saved.`);
+}
+
+function appendScenarioRow(rec) {
+  const tbody = document.querySelector("#scenarioTable tbody");
+  if (!tbody) return;
+
+  const s = rec.scenario;
+  const row = document.createElement("tr");
+
+  const cells = [
+    rec.name,
+    s.state || "None",
+    s.adjustCosts === "yes" ? "Yes" : "No",
+    s.includeOppCost ? "Yes" : "No",
+    `A$${applyCostOfLiving(s.rawCost, s.state, s.adjustCosts).toFixed(2)}`,
+    s.localCheck ? "Yes" : "No",
+    s.widerCheck ? "Yes" : "No",
+    s.weeklyCheck ? "Yes" : "No",
+    s.monthlyCheck ? "Yes" : "No",
+    s.virtualCheck ? "Yes" : "No",
+    s.hybridCheck ? "Yes" : "No",
+    s.twoHCheck ? "Yes" : "No",
+    s.fourHCheck ? "Yes" : "No",
+    s.commCheck ? "Yes" : "No",
+    s.psychCheck ? "Yes" : "No",
+    s.vrCheck ? "Yes" : "No",
+    rec.uptakePercent.toFixed(1),
+    formatMoney(rec.totalEconomicCost),
+    formatMoney(rec.qalyMonetised),
+    formatMoney(rec.totalSavings),
+    formatMoney(rec.totalWTPBenefits),
+    formatMoney(rec.netBenefitQALY),
+    formatMoney(rec.netBenefitSavings),
+    formatMoney(rec.netBenefitWTP),
+    rec.bcrQALY ? rec.bcrQALY.toFixed(2) : "n.a.",
+    rec.bcrSavings ? rec.bcrSavings.toFixed(2) : "n.a.",
+    rec.bcrWTP ? rec.bcrWTP.toFixed(2) : "n.a.",
+    rec.lonelinessFreeDays.toFixed(0)
+  ];
+
+  cells.forEach(text => {
+    const td = document.createElement("td");
+    td.textContent = text;
+    row.appendChild(td);
+  });
+
+  tbody.appendChild(row);
+}
+
+function openComparison() {
+  if (savedScenarios.length < 1) {
+    alert("Please save at least one scenario before exporting.");
+    return;
+  }
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert("Unable to load PDF library. Please check your connection.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 16;
+
+  doc.setFontSize(14);
+  doc.text("LonelyLessAustralia Decision Aid", pageWidth / 2, y, { align: "center" });
+  y += 6;
+  doc.setFontSize(11);
+  doc.text("Scenario comparison summary", pageWidth / 2, y, { align: "center" });
+  y += 8;
+
+  savedScenarios.forEach((rec, idx) => {
+    if (y > 260) {
+      doc.addPage();
+      y = 16;
+    }
+    const s = rec.scenario;
+    doc.setFontSize(11);
+    doc.text(`${idx + 1}. ${rec.name}`, 12, y);
+    y += 5;
+    doc.setFontSize(9);
+    const lines = [
+      `State: ${s.state || "None"}, cost adjust: ${s.adjustCosts === "yes" ? "Yes" : "No"}, include opportunity cost: ${s.includeOppCost ? "Yes" : "No"}`,
+      `Programme type: ${s.commCheck ? "Community engagement" : s.psychCheck ? "Psychological counselling" : s.vrCheck ? "Virtual reality" : "Peer support reference"}`,
+      `Method: ${s.virtualCheck ? "Virtual" : s.hybridCheck ? "Hybrid" : "In person"}, frequency: ${s.weeklyCheck ? "Weekly" : s.monthlyCheck ? "Monthly" : "Daily reference"}`,
+      `Accessibility: ${s.localCheck ? "Local area" : s.widerCheck ? "Wider community" : "At home reference"}, duration: ${s.twoHCheck ? "2 hour" : s.fourHCheck ? "4 hour" : "30 minute reference"}`,
+      `Uptake: ${rec.uptakePercent.toFixed(1)} percent, participants: ${rec.participants.toFixed(0)}`,
+      `Total cost: A$${formatMoney(rec.totalEconomicCost)}, QALY benefits: A$${formatMoney(rec.qalyMonetised)}, cost savings: A$${formatMoney(rec.totalSavings)}, WTP benefits: A$${formatMoney(rec.totalWTPBenefits)}`,
+      `Net benefit QALY: A$${formatMoney(rec.netBenefitQALY)}, net benefit savings: A$${formatMoney(rec.netBenefitSavings)}, net benefit WTP: A$${formatMoney(rec.netBenefitWTP)}`,
+      `BCR QALY: ${rec.bcrQALY ? rec.bcrQALY.toFixed(2) : "n.a."}, BCR savings: ${rec.bcrSavings ? rec.bcrSavings.toFixed(2) : "n.a."}, BCR WTP: ${rec.bcrWTP ? rec.bcrWTP.toFixed(2) : "n.a."}`,
+      `Loneliness free days (5 years): ${rec.lonelinessFreeDays.toFixed(0)}`
     ];
-
-    const mainBody = document.getElementById("dce-benefits-table-body");
-    if (mainBody) {
-      mainBody.innerHTML = "";
-      scenarios.forEach(sc => {
-        const r = sc.results;
-        const cost = r.totalCostAllGroups;
-        const totalWtp = r.totalWtpAllGroups;
-        const endorsement = r.util.endorseProb;
-        const effective =
-          totalWtp !== null ? totalWtp * endorsement : null;
-        const npvDce =
-          totalWtp !== null ? totalWtp - cost : null;
-        const bcrDce =
-          totalWtp !== null && cost > 0 ? totalWtp / cost : null;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${sc.label}</td>
-          <td class="numeric-col">${formatCurrency(cost)}</td>
-          <td class="numeric-col">${formatCurrency(totalWtp || 0)}</td>
-          <td class="numeric-col">-</td>
-          <td class="numeric-col">-</td>
-          <td class="numeric-col">${formatPercent(endorsement, 1)}</td>
-          <td class="numeric-col">${effective === null ? "-" : formatCurrency(effective)}</td>
-          <td class="numeric-col">${bcrDce === null ? "-" : bcrDce.toFixed(2)}</td>
-          <td class="numeric-col">${npvDce === null ? "-" : formatCurrency(npvDce)}</td>
-          <td class="numeric-col">-</td>
-          <td class="numeric-col">-</td>
-        `;
-        mainBody.appendChild(tr);
-      });
-    }
-
-    const detailBody = document.getElementById("sensitivity-table-body");
-    if (detailBody) {
-      detailBody.innerHTML = "";
-      scenarios.forEach(sc => {
-        const r = sc.results;
-        const costPerGroup = r.totalEconomicCostPerGroup;
-        const endRate = r.util.endorseProb;
-        const totalWtp = r.totalWtpAllGroups;
-        const npvDce =
-          totalWtp !== null ? totalWtp - r.totalCostAllGroups : null;
-        const bcrDce =
-          totalWtp !== null && r.totalCostAllGroups > 0
-            ? totalWtp / r.totalCostAllGroups
-            : null;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${sc.label}</td>
-          <td>${state.modelLabel}</td>
-          <td class="numeric-col">${formatPercent(endRate, 1)}</td>
-          <td class="numeric-col">${formatCurrency(costPerGroup)}</td>
-          <td class="numeric-col">${formatCurrency(totalWtp || 0)}</td>
-          <td class="numeric-col">-</td>
-          <td class="numeric-col">-</td>
-          <td class="numeric-col">${bcrDce === null ? "-" : bcrDce.toFixed(2)}</td>
-          <td class="numeric-col">${npvDce === null ? "-" : formatCurrency(npvDce)}</td>
-          <td class="numeric-col">-</td>
-          <td class="numeric-col">-</td>
-          <td class="numeric-col">-</td>
-          <td class="numeric-col">-</td>
-          <td class="numeric-col">${
-            totalWtp === null ? "-" : formatCurrency(totalWtp * endRate)
-          }</td>
-          <td class="numeric-col">-</td>
-        `;
-        detailBody.appendChild(tr);
-      });
-    }
-  }
-
-  /* ===========================
-     Saved scenarios
-     =========================== */
-
-  function saveCurrentScenario() {
-    if (!state.lastResults) {
-      showToast("Apply a configuration before saving a scenario.", "warning");
-      return;
-    }
-
-    const cfg = state.lastResults.cfg;
-    const name =
-      cfg.scenarioName || `Scenario ${state.scenarios.length + 1}`;
-    const scenario = {
-      id: Date.now(),
-      name,
-      cfg: { ...cfg },
-      results: state.lastResults
-    };
-    state.scenarios.push(scenario);
-    updateScenarioTable();
-    updateSensitivityTab();
-    showToast("Scenario saved.", "success");
-  }
-
-  function updateScenarioTable() {
-    const tbody = document.querySelector("#scenario-table tbody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-    state.scenarios.forEach(s => {
-      const r = s.results;
-      const cfg = r.cfg;
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><input type="checkbox" /></td>
-        <td>${s.name}</td>
-        <td>
-          <span class="chip chip-tier">${prettyServiceType(cfg.serviceType)}</span>
-          <span class="chip chip-mentorship">${prettyFrequency(cfg.frequency)}</span>
-        </td>
-        <td>${cfg.serviceType}</td>
-        <td>${cfg.mode}</td>
-        <td>${cfg.frequency}</td>
-        <td>${cfg.duration}</td>
-        <td>${cfg.distance}</td>
-        <td class="numeric-cell">${formatNumber(cfg.numberOfGroups, 0)}</td>
-        <td class="numeric-cell">${formatNumber(cfg.participantsPerGroup, 0)}</td>
-        <td class="numeric-cell">${formatCurrency(cfg.costPerParticipantPerMonth)}</td>
-        <td>${state.modelLabel}</td>
-        <td class="numeric-cell">${formatPercent(r.util.endorseProb, 1)}</td>
-        <td class="numeric-cell">${
-          r.wtpPerParticipantPerMonth === null
-            ? "-"
-            : formatCurrency(r.wtpPerParticipantPerMonth, 1)
-        }</td>
-        <td class="numeric-cell">${
-          r.totalWtpAllGroups === null
-            ? "-"
-            : formatCurrency(r.totalWtpAllGroups)
-        }</td>
-        <td class="numeric-cell">${
-          r.bcr === null ? "-" : r.bcr.toFixed(2)
-        }</td>
-        <td class="numeric-cell">${formatCurrency(r.totalCostAllGroups)}</td>
-        <td class="numeric-cell">${
-          r.totalWtpAllGroups === null
-            ? "-"
-            : formatCurrency(r.totalWtpAllGroups)
-        }</td>
-        <td class="numeric-cell">${
-          r.netBenefitAllGroups === null
-            ? "-"
-            : formatCurrency(r.netBenefitAllGroups)
-        }</td>
-        <td class="numeric-cell">${
-          cfg.numberOfGroups * cfg.participantsPerGroup
-        }</td>
-        <td>${cfg.scenarioNotes || ""}</td>
-      `;
-      tbody.appendChild(tr);
+    lines.forEach(line => {
+      doc.text(line, 12, y);
+      y += 4;
     });
-  }
+    y += 2;
+  });
 
-  /* ===========================
-     Export utilities
-     =========================== */
+  doc.save("LonelyLessAustralia_scenarios.pdf");
+}
 
-  function exportTableToExcel(tableId, filename) {
-    const table = document.getElementById(tableId);
-    if (!table) {
-      showToast("Table not found for export.", "error");
-      return;
-    }
-    if (!window.XLSX) {
-      showToast("Excel export library not loaded.", "error");
-      return;
-    }
-    const wb = window.XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
-    window.XLSX.writeFile(wb, filename);
-  }
+/***************************************************************************
+ * Modal and toast helpers
+ ***************************************************************************/
 
-  function exportElementToPdf(elementId, filename) {
-    const el = document.getElementById(elementId);
-    if (!el) {
-      showToast("Content not found for PDF export.", "error");
-      return;
-    }
-    const jsPDF = window.jspdf && window.jspdf.jsPDF;
-    if (!jsPDF) {
-      showToast("PDF export library not loaded.", "error");
-      return;
-    }
-    const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
-    doc.html(el, {
-      callback: function (pdf) {
-        pdf.save(filename);
-      },
-      margin: [24, 24, 24, 24],
-      autoPaging: "text"
-    });
-  }
+function openModal() {
+  const modal = document.getElementById("resultModal");
+  if (modal) modal.style.display = "block";
+}
 
-  /* ===========================
-     Tabs
-     =========================== */
+function closeModal() {
+  const modal = document.getElementById("resultModal");
+  if (modal) modal.style.display = "none";
+}
 
-  function setupTabs() {
-    const links = document.querySelectorAll(".tab-link");
-    const panels = document.querySelectorAll(".tab-panel");
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add("show");
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2600);
+}
 
-    links.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const tabKey = btn.getAttribute("data-tab");
-        links.forEach(b => b.classList.remove("active"));
-        panels.forEach(p => p.classList.remove("active"));
-        btn.classList.add("active");
-        const panel = document.getElementById(`tab-${tabKey}`);
-        if (panel) panel.classList.add("active");
-      });
-    });
-  }
+/***************************************************************************
+ * Helpers
+ ***************************************************************************/
 
-  /* ===========================
-     Tooltips
-     =========================== */
+function formatMoney(x) {
+  if (!isFinite(x)) return "0";
+  return Number(x).toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
 
-  function setupTooltips() {
-    let currentBubble = null;
-
-    function hideBubble() {
-      if (currentBubble && currentBubble.parentNode) {
-        currentBubble.parentNode.removeChild(currentBubble);
-      }
-      currentBubble = null;
-    }
-
-    document.addEventListener("mouseover", e => {
-      const target = e.target.closest(".info-icon");
-      if (!target || !target.dataset.tooltip) return;
-
-      hideBubble();
-
-      const bubble = document.createElement("div");
-      bubble.className = "tooltip-bubble";
-      bubble.innerHTML = `<p>${target.dataset.tooltip}</p><div class="tooltip-arrow"></div>`;
-      document.body.appendChild(bubble);
-      currentBubble = bubble;
-
-      const rect = target.getBoundingClientRect();
-      const bRect = bubble.getBoundingClientRect();
-      bubble.style.left = `${rect.left + window.scrollX}px`;
-      bubble.style.top = `${rect.bottom + 8 + window.scrollY}px`;
-      const arrow = bubble.querySelector(".tooltip-arrow");
-      if (arrow) {
-        arrow.style.top = "-4px";
-        arrow.style.left = "12px";
-      }
-    });
-
-    document.addEventListener("mouseout", e => {
-      if (e.relatedTarget && e.relatedTarget.closest(".tooltip-bubble")) {
-        return;
-      }
-      hideBubble();
-    });
-
-    document.addEventListener("scroll", hideBubble);
-  }
-
-  /* ===========================
-     Slider display and toggles
-     =========================== */
-
-  function setupSliderDisplay() {
-    const slider = document.getElementById("cost-slider");
-    const display = document.getElementById("cost-display");
-    const regionEl = document.getElementById("region-select");
-    if (!slider || !display) return;
-
-    const update = () => {
-      const val = parseFloat(slider.value) || 0;
-      const region = regionEl ? regionEl.value || "NSW" : "NSW";
-      const multiplier = costOfLivingMultipliers[region] || 1.0;
-      const adjusted = val * multiplier;
-      display.textContent =
-        `${formatCurrency(val)} (base) – ${formatCurrency(adjusted)} after ${region} adjustment`;
-    };
-    slider.addEventListener("input", update);
-    if (regionEl) regionEl.addEventListener("change", update);
-    update();
-  }
-
-  function setupCurrencyToggle() {
-    const buttons = document.querySelectorAll(".pill-toggle[data-currency]");
-    buttons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        buttons.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.currency = btn.dataset.currency || "AUD";
-        if (state.lastResults) {
-          refreshAll(state.lastResults, { skipToast: true });
-        }
-      });
-    });
-  }
-
-  function setupOppToggle() {
-    const btn = document.getElementById("opp-toggle");
-    if (!btn) return;
-    btn.addEventListener("click", () => {
-      btn.classList.toggle("on");
-      const labelSpan = btn.querySelector(".switch-label");
-      if (labelSpan) {
-        if (btn.classList.contains("on")) {
-          labelSpan.textContent = "Opportunity cost included";
-          state.includeOppCost = true;
-        } else {
-          labelSpan.textContent = "Opportunity cost excluded";
-          state.includeOppCost = false;
-        }
-      }
-      if (state.lastResults) {
-        const cfg = state.lastResults.cfg;
-        const newResults = computeCostsAndBenefits(cfg);
-        state.lastResults = newResults;
-        refreshAll(newResults, { skipToast: true });
-      }
-    });
-  }
-
-  /* ===========================
-     Results modal
-     =========================== */
-
-  function setupResultsModal() {
-    const openBtn = document.getElementById("open-snapshot");
-    const modal = document.getElementById("results-modal");
-    const closeBtn = document.getElementById("close-modal");
-    const body = document.getElementById("modal-body");
-    if (!openBtn || !modal || !closeBtn || !body) return;
-
-    openBtn.addEventListener("click", () => {
-      if (!state.lastResults) {
-        showToast("Apply a configuration to open a summary.", "warning");
-        return;
-      }
-      const r = state.lastResults;
-      const cfg = r.cfg;
-      body.innerHTML = `
-        <h3>Headline summary</h3>
-        <p>
-          The selected configuration offers a ${prettyServiceType(
-            cfg.serviceType
-          ).toLowerCase()} programme, delivered as ${prettyMode(
-        cfg.mode
-      ).toLowerCase()} with ${prettyFrequency(
-        cfg.frequency
-      ).toLowerCase()} ${prettyDuration(
-        cfg.duration
-      ).toLowerCase()} in ${prettyDistance(
-        cfg.distance
-      ).toLowerCase()}. It is expected to run for ${formatNumber(
-        cfg.programmeMonths,
-        0
-      )} months.
-        </p>
-        <p>
-          The main DCE model suggests that around ${formatPercent(
-            r.util.endorseProb,
-            1
-          )} of older adults would endorse and take up this offer at ${formatCurrency(
-        cfg.costPerParticipantPerMonth
-      )} per person per month in ${cfg.region}. Total economic costs are approximately ${formatCurrency(
-        r.totalCostAllGroups
-      )}, compared with preference-based benefits of ${formatCurrency(
-        r.totalWtpAllGroups || 0
-      )}. This implies a benefit–cost ratio of ${
-        r.bcr ? r.bcr.toFixed(2) : "-"
-      } and net benefits of ${
-        r.netBenefitAllGroups === null
-          ? "-"
-          : formatCurrency(r.netBenefitAllGroups)
-      } under the current assumptions.
-        </p>
-        <h3>Key indicators</h3>
-        <ul>
-          <li>Endorsement: ${formatPercent(r.util.endorseProb, 1)}</li>
-          <li>Cost per participant per month (adjusted): ${formatCurrency(
-            cfg.costPerParticipantPerMonth
-          )}</li>
-          <li>Total economic cost (all groups): ${formatCurrency(
-            r.totalCostAllGroups
-          )}</li>
-          <li>Total WTP benefit (all groups): ${formatCurrency(
-            r.totalWtpAllGroups || 0
-          )}</li>
-          <li>Benefit–cost ratio: ${
-            r.bcr ? r.bcr.toFixed(2) : "-"
-          }</li>
-        </ul>
-      `;
-      modal.classList.remove("hidden");
-      modal.setAttribute("aria-hidden", "false");
-    });
-
-    closeBtn.addEventListener("click", () => {
-      modal.classList.add("hidden");
-      modal.setAttribute("aria-hidden", "true");
-    });
-
-    modal.addEventListener("click", e => {
-      if (e.target === modal) {
-        modal.classList.add("hidden");
-        modal.setAttribute("aria-hidden", "true");
-      }
-    });
-  }
-
-  /* ===========================
-     Guided tour (optional)
-     =========================== */
-
-  function setupGuidedTour() {
-    const startBtn = document.getElementById("btn-start-tour");
-    const overlay = document.getElementById("tour-overlay");
-    const pop = document.getElementById("tour-popover");
-    const titleEl = document.getElementById("tour-title");
-    const contentEl = document.getElementById("tour-content");
-    const indicator = document.getElementById("tour-step-indicator");
-    const nextBtn = document.getElementById("tour-next");
-    const prevBtn = document.getElementById("tour-prev");
-    const closeBtn = document.getElementById("tour-close");
-    if (!startBtn || !overlay || !pop) return;
-
-    const steps = Array.from(
-      document.querySelectorAll("[data-tour-step]")
-    ).map(el => ({
-      el,
-      title: el.getAttribute("data-tour-title") || "Step",
-      content: el.getAttribute("data-tour-content") || "",
-      key: el.getAttribute("data-tour-step") || ""
-    }));
-
-    let idx = 0;
-
-    function showStep(i) {
-      if (!steps.length) return;
-      if (i < 0) i = 0;
-      if (i >= steps.length) i = steps.length - 1;
-      idx = i;
-      const step = steps[idx];
-      const rect = step.el.getBoundingClientRect();
-
-      overlay.classList.remove("hidden");
-      pop.classList.remove("hidden");
-
-      titleEl.textContent = step.title;
-      contentEl.textContent = step.content;
-      indicator.textContent = `Step ${idx + 1} of ${steps.length}`;
-
-      const top = rect.bottom + window.scrollY + 8;
-      const left = rect.left + window.scrollX;
-      pop.style.top = `${top}px`;
-      pop.style.left = `${left}px`;
-    }
-
-    function endTour() {
-      overlay.classList.add("hidden");
-      pop.classList.add("hidden");
-    }
-
-    startBtn.addEventListener("click", () => {
-      showStep(0);
-    });
-
-    nextBtn.addEventListener("click", () => {
-      showStep(idx + 1);
-    });
-
-    prevBtn.addEventListener("click", () => {
-      showStep(idx - 1);
-    });
-
-    closeBtn.addEventListener("click", endTour);
-    overlay.addEventListener("click", endTour);
-  }
-
-  /* ===========================
-     Refresh all views
-     =========================== */
-
-  function refreshAll(results, options = {}) {
-    state.lastResults = results;
-    updateConfigSummary(results);
-    updateResultsTab(results);
-    updateCostingTab(results);
-    updateNationalSimulation(results);
-    updateSensitivityTab();
-    if (!options.skipToast) {
-      showToast("Configuration applied. Results updated.", "success");
-    }
-  }
-
-  /* ===========================
-     Buttons and init
-     =========================== */
-
-  function setupButtons() {
-    const applyBtn = document.getElementById("update-results");
-    if (applyBtn) {
-      applyBtn.addEventListener("click", () => {
-        const cfg = readConfigurationFromInputs();
-        const results = computeCostsAndBenefits(cfg);
-        refreshAll(results);
-      });
-    }
-
-    const saveBtn = document.getElementById("save-scenario");
-    if (saveBtn) {
-      saveBtn.addEventListener("click", saveCurrentScenario);
-    }
-
-    const exportScenExcel = document.getElementById("export-excel");
-    if (exportScenExcel) {
-      exportScenExcel.addEventListener("click", () =>
-        exportTableToExcel("scenario-table", "lonelyless_scenarios.xlsx")
-      );
-    }
-
-    const exportScenPdf = document.getElementById("export-pdf");
-    if (exportScenPdf) {
-      exportScenPdf.addEventListener("click", () =>
-        exportElementToPdf("tab-scenarios", "lonelyless_policy_brief.pdf")
-      );
-    }
-
-    const exportSensExcel = document.getElementById(
-      "export-sensitivity-benefits-excel"
-    );
-    if (exportSensExcel) {
-      exportSensExcel.addEventListener("click", () =>
-        exportTableToExcel("dce-benefits-table", "lonelyless_sensitivity.xlsx")
-      );
-    }
-
-    const exportSensPdf = document.getElementById(
-      "export-sensitivity-benefits-pdf"
-    );
-    if (exportSensPdf) {
-      exportSensPdf.addEventListener("click", () =>
-        exportElementToPdf("tab-sensitivity", "lonelyless_sensitivity.pdf")
-      );
-    }
-
-    const refreshSensBtn = document.getElementById(
-      "refresh-sensitivity-benefits"
-    );
-    if (refreshSensBtn) {
-      refreshSensBtn.addEventListener("click", () =>
-        updateSensitivityTab()
-      );
-    }
-  }
-
-  function init() {
-    setupTabs();
-    setupTooltips();
-    setupSliderDisplay();
-    setupCurrencyToggle();
-    setupOppToggle();
-    setupResultsModal();
-    setupGuidedTour();
-    setupButtons();
-
-    // Apply default configuration once on load
-    const cfg = readConfigurationFromInputs();
-    const results = computeCostsAndBenefits(cfg);
-    refreshAll(results, { skipToast: true });
-  }
-
-  document.addEventListener("DOMContentLoaded", init);
-})();
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, function (m) {
+    return ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#39;"
+    })[m];
+  });
+}
