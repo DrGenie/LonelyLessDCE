@@ -1,10 +1,12 @@
-// script.js
+
+// script.js (updated with Copilot soft-integration)
 /****************************************************************************
  * LonelyLessAustralia Decision Aid
  * - World Bank / WHO style UI
  * - DCE based uptake and willingness to pay
  * - QALY, ROI, cost saving and loneliness free day outcomes
  * - Scenario saving, PDF export and briefing text
+ * - Soft integration with Microsoft Copilot
  ****************************************************************************/
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -109,13 +111,7 @@ const VALUE_PER_QALY = 50000;
 const BASE_PARTICIPANTS = 250;
 const SESSIONS_PER_PROGRAM = 12;
 
-/* ROI and loneliness free day parameters based on national modelling
-   Figures derived from an educational friendship program for older women in Australia.
-   - Intervention cost around A$155 per participant over five years
-   - Healthcare savings around A$159 per participant over five years
-   - Productivity gains around A$288 per participant over five years
-   - Around 115 loneliness free days per participant over five years
-*/
+/* ROI and loneliness free day parameters based on national modelling */
 const ROI_PARAMS = {
   healthSavingsPerParticipant5Y: 159,
   productivitySavingsPerParticipant5Y: 288,
@@ -123,7 +119,7 @@ const ROI_PARAMS = {
   timeHorizonYears: 5
 };
 
-/* Opportunity cost assumptions (hours and hourly value) */
+/* Opportunity cost assumptions */
 const OPP_COST_HOURLY_VALUE = 20; // AUD per hour
 const TRAVEL_HOURS_LOCAL_PER_SESSION = 0.5;
 const TRAVEL_HOURS_WIDER_PER_SESSION = 1.5;
@@ -147,7 +143,6 @@ function buildScenarioFromInputs() {
   const frequency = document.querySelector('input[name="frequency"]:checked');
   const duration = document.querySelector('input[name="duration"]:checked');
   const accessibility = document.querySelector('input[name="accessibility"]:checked');
-
   const method = document.querySelector('input[name="method"]:checked');
 
   if (!support || !frequency || !duration || !accessibility) {
@@ -534,24 +529,15 @@ function renderWTPChart() {
   const values = wtpDataMain.map(d => d.wtp);
   const errors = wtpDataMain.map(d => d.se);
 
-  const dataConfig = {
-    labels,
-    datasets: [{
-      label: "WTP (A$ per session)",
-      data: values,
-      error: errors
-    }]
-  };
-
   wtpChartInstance = new Chart(ctx, {
     type: "bar",
     data: {
-      labels: dataConfig.labels,
+      labels,
       datasets: [{
         label: "WTP (A$ per session)",
-        data: dataConfig.datasets[0].data,
-        backgroundColor: dataConfig.datasets[0].data.map(v => v >= 0 ? "rgba(0,123,255,0.7)" : "rgba(220,53,69,0.7)"),
-        borderColor: dataConfig.datasets[0].data.map(v => v >= 0 ? "rgba(0,123,255,1)" : "rgba(220,53,69,1)"),
+        data: values,
+        backgroundColor: values.map(v => v >= 0 ? "rgba(0,123,255,0.7)" : "rgba(220,53,69,0.7)"),
+        borderColor: values.map(v => v >= 0 ? "rgba(0,123,255,1)" : "rgba(220,53,69,1)"),
         borderWidth: 1
       }]
     },
@@ -617,7 +603,6 @@ function updateWTPBenefitsForCurrentScenario() {
   if (!res) return;
   const div = document.getElementById("wtpBenefitSummary");
   if (!div) return;
-  const s = res.scenario;
 
   const html =
     `<p><strong>Average willingness to pay per participant per session:</strong> A$${res.wtpPerParticipantSession.toFixed(2)}</p>` +
@@ -930,6 +915,134 @@ function openComparison() {
   });
 
   doc.save("LonelyLessAustralia_scenarios.pdf");
+}
+
+/***************************************************************************
+ * Microsoft Copilot soft integration
+ ***************************************************************************/
+
+async function prepareCopilotPrompt() {
+  let target = null;
+
+  if (savedScenarios.length > 0) {
+    // Use the most recently saved scenario
+    target = savedScenarios[savedScenarios.length - 1];
+  } else {
+    // Fall back to the current (unsaved) configuration
+    const res = getFullResultsForScenario();
+    if (!res) {
+      alert("Configure and apply a scenario first or save at least one scenario before using Copilot.");
+      return;
+    }
+    const name = res.scenario.scenarioName || "Current scenario (unsaved)";
+    target = { name, ...res };
+  }
+
+  const sc = target.scenario;
+
+  const exportObj = {
+    tool: "LonelyLessAustralia Decision Aid",
+    institution: "Newcastle Business School, University of Newcastle, Australia",
+    purpose: "To help assess loneliness support programmes for older adults in Australia using discrete choice evidence, realistic costs and health outcomes.",
+    scenarioName: target.name,
+    scenarioNotes: sc.scenarioNotes || "",
+    modelAssumptions: {
+      baseCohortSize: BASE_PARTICIPANTS,
+      sessionsPerProgram: SESSIONS_PER_PROGRAM,
+      qalyScenario: target.qalyScenario,
+      qalyGainPerParticipant: target.qalyPerParticipant,
+      valuePerQALY_AUD: VALUE_PER_QALY,
+      timeHorizonYears: ROI_PARAMS.timeHorizonYears,
+      includesOpportunityCost: sc.includeOppCost
+    },
+    inputs: {
+      state: sc.state || null,
+      costOfLivingAdjusted: sc.adjustCosts === "yes",
+      participantFeePerSession_raw_AUD: sc.rawCost,
+      participantFeePerSession_adjusted_AUD: target.adjustedUnitCost,
+      programmeType: sc.commCheck ? "Community engagement" : sc.psychCheck ? "Psychological counselling" : sc.vrCheck ? "Virtual reality" : "Peer support (reference)",
+      method: sc.virtualCheck ? "Virtual" : sc.hybridCheck ? "Hybrid" : "In person",
+      frequency: sc.weeklyCheck ? "Weekly" : sc.monthlyCheck ? "Monthly" : "Daily (reference)",
+      duration: sc.twoHCheck ? "2 hour sessions" : sc.fourHCheck ? "4 hour sessions" : "30 minute sessions (reference)",
+      accessibility: sc.localCheck ? "Local area (around 12 km)" : sc.widerCheck ? "Wider community (50 km or more)" : "At home (reference)"
+    },
+    results: {
+      uptakePercent: target.uptakePercent,
+      participants: target.participants,
+      totalEconomicCost_AUD: target.totalEconomicCost,
+      costPerParticipant_AUD: target.participants > 0 ? target.totalEconomicCost / target.participants : null,
+      qalyMonetisedBenefits_AUD: target.qalyMonetised,
+      totalQALYs: target.totalQALYs,
+      healthSavings_AUD: target.healthSavings,
+      productivitySavings_AUD: target.productivitySavings,
+      totalSavings_AUD: target.totalSavings,
+      wtpPerParticipantPerSession_AUD: target.wtpPerParticipantSession,
+      wtpPerParticipantPerProgram_AUD: target.wtpPerParticipantProgram,
+      totalWTPBenefits_AUD: target.totalWTPBenefits,
+      lonelinessFreeDays: target.lonelinessFreeDays,
+      netBenefit_QALY_AUD: target.netBenefitQALY,
+      netBenefit_Savings_AUD: target.netBenefitSavings,
+      netBenefit_WTP_AUD: target.netBenefitWTP,
+      bcr_QALY: target.bcrQALY,
+      bcr_Savings: target.bcrSavings,
+      bcr_WTP: target.bcrWTP
+    }
+  };
+
+  const jsonText = JSON.stringify(exportObj, null, 2);
+
+  const promptText =
+`You are assisting a policy analyst who is using the "LonelyLessAustralia Decision Aid" tool developed at Newcastle Business School, University of Newcastle, Australia.
+
+Context:
+- The tool combines a discrete choice experiment on older adults preferences for loneliness support programmes with Australian and international evidence on programme costs, QALY gains, health service use, productivity impacts and loneliness free days.
+- Each scenario represents a particular programme configuration (programme type, delivery method, frequency, duration, accessibility and participant fees) plus economic assumptions (QALY gains, value per QALY, time horizon and opportunity cost of participant time).
+
+Task:
+1. Read the JSON scenario export below.
+2. In clear, non technical language, describe what this scenario represents:
+   - The type of programme and how it would be delivered.
+   - Who is expected to participate and under what assumptions.
+3. Explain the main indicators in a way that is useful for senior decision makers:
+   - Uptake percent and number of participants.
+   - Total economic cost and cost per participant.
+   - Monetised QALY gains and what they imply about health benefits.
+   - Health system and productivity cost savings.
+   - Willingness to pay based benefits.
+   - Loneliness free days.
+   - Net benefits and benefit cost ratios for each benefit measure.
+4. Provide a short interpretation from the perspective of a health department or funding agency:
+   - Does this scenario appear to offer good value for money.
+   - Under what conditions would you recommend funding or scaling this programme.
+   - What simple changes to programme design (for example cost, frequency, venue or delivery method) might improve uptake or value for money.
+5. Highlight any important caveats or sensitivities:
+   - For example, dependence on assumed QALY gains, the five year time horizon, cost of living region or uncertainty around cost savings and WTP estimates.
+
+Please keep the response to around 400 to 600 words and structure it with short headings such as "Programme overview", "Key indicators", "Value for money" and "Caveats".
+
+JSON scenario export:
+${jsonText}
+`;
+
+  const box = document.getElementById("copilotPromptBox");
+  if (box) {
+    box.value = promptText;
+  }
+
+  let clipboardOk = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(promptText);
+      clipboardOk = true;
+      showToast("Copilot prompt copied to clipboard. A new Copilot tab has been opened.");
+    } catch (e) {
+      showToast("Unable to copy to clipboard. Copy the prompt from the box and paste it into Copilot.");
+    }
+  } else {
+    showToast("Clipboard is not available. Copy the prompt from the box and paste it into Copilot.");
+  }
+
+  window.open("https://copilot.microsoft.com/", "_blank", "noopener");
 }
 
 /***************************************************************************
