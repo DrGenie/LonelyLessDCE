@@ -1,5 +1,4 @@
-
-// script.js (updated with Copilot soft-integrationnn)
+// script.js (with Copilot soft integration, unchanged logic)
 /****************************************************************************
  * LonelyLessAustralia Decision Aid
  * - World Bank / WHO style UI
